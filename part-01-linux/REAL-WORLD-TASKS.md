@@ -1987,6 +1987,17 @@ Implement a comprehensive PostgreSQL backup and recovery system with automation.
 | 1.8 - Performance Monitoring | Hard | 90 min | System monitoring tools |
 | 1.9 - Package Management | Medium | 75 min | APT/DEB packages, repository setup |
 | 1.10 - Database Backup | Hard | 90 min | PostgreSQL, backup strategies |
+| 1.11 - Log Rotation | Easy | 45 min | Logrotate basics |
+| 1.12 - Disk Space Crisis | Medium | 60 min | Disk commands, troubleshooting |
+| 1.13 - Network Troubleshooting | Medium | 75 min | Networking fundamentals |
+| 1.14 - Systemd Timers | Medium | 60 min | Systemd, cron basics |
+| 1.15 - Security Incident Response | Hard | 90 min | Security fundamentals, forensics |
+| 1.16 - DNS Configuration | Medium | 60 min | DNS basics, systemd-resolved |
+| 1.17 - Process Priority | Easy | 45 min | Process management, nice/renice |
+| 1.18 - High CPU/Memory Issues | Hard | 75 min | Performance analysis, troubleshooting |
+
+**Total Time**: ~23 hours (1,305 minutes)  
+**Average Time**: ~72 minutes per task
 
 ---
 
@@ -2011,23 +2022,1020 @@ Implement a comprehensive PostgreSQL backup and recovery system with automation.
 
 ---
 
-## Additional Real-World Tasks (Coming Soon)
+## Task 1.11: Log Rotation Configuration
 
-The following tasks will be added with the same real-world format:
+### 🎬 Real-World Scenario
+Your application servers are running out of disk space because application logs are growing unchecked. A production server went down last week when /var filled up completely. You need to implement comprehensive log rotation to prevent this from happening again.
 
-- Task 1.6: Firewall Configuration for Multi-Tier Application
-- Task 1.7: Centralized Logging Setup
-- Task 1.8: Performance Troubleshooting During High Load
-- Task 1.9: Package Repository Management
-- Task 1.10: Database Backup Automation
-- Task 1.11: Log Rotation Strategy
-- Task 1.12: Disk Space Crisis Management
-- Task 1.13: Network Connectivity Troubleshooting
-- Task 1.14: Scheduled Task Management
-- Task 1.15: Security Incident Response
-- Task 1.16: DNS Configuration and Troubleshooting
-- Task 1.17: Process Priority Management
-- Task 1.18: Memory Leak Investigation
+### ⏱️ Time to Complete: 45 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Configure logrotate for all application and system logs with appropriate retention policies.
+
+**Log Files to Manage:**
+- Application logs: /var/log/applications/*.log (5GB+/day)
+- Nginx access/error logs (2GB/day)
+- PostgreSQL logs (500MB/day)
+- System logs already managed by default
+
+**Retention Requirements:**
+- Application logs: 14 days, compress after 1 day
+- Nginx logs: 30 days for access, 14 days for errors
+- PostgreSQL logs: 30 days
+- Rotate when size > 100MB or daily (whichever comes first)
+
+### ✅ Validation Checklist
+
+- [ ] **Logrotate Configuration**
+  - [ ] Configuration files created in /etc/logrotate.d/
+  - [ ] Syntax validated (logrotate -d)
+  - [ ] Rotation frequency configured
+  - [ ] Compression enabled
+  - [ ] Retention policies set
+
+- [ ] **Service Handling**
+  - [ ] Services reloaded after rotation (postrotate)
+  - [ ] No log entries lost during rotation
+  - [ ] Services continue logging to correct files
+
+- [ ] **Testing**
+  - [ ] Manual rotation tested
+  - [ ] Rotation creates expected files
+  - [ ] Old files deleted per policy
+  - [ ] Compression works correctly
+
+### 📦 Required Deliverables
+
+1. **Logrotate Configuration** (`/etc/logrotate.d/applications`)
+   ```
+   /var/log/applications/*.log {
+       daily
+       missingok
+       rotate 14
+       compress
+       delaycompress
+       notifempty
+       create 0640 appuser appgroup
+       size 100M
+       sharedscripts
+       postrotate
+           systemctl reload application-service > /dev/null 2>&1 || true
+       endscript
+   }
+   ```
+
+2. **Test Results**
+   ```bash
+   # Test rotation manually
+   sudo logrotate -f /etc/logrotate.d/applications
+   
+   # Verify rotated files
+   ls -lh /var/log/applications/
+   # Expected: app.log, app.log.1, app.log.2.gz, etc.
+   ```
+
+3. **Monitoring Script** for disk space
+   ```bash
+   #!/bin/bash
+   # Alert if /var reaches 80% capacity
+   ```
+
+### 🎯 Success Criteria
+- ✅ Logs rotate automatically
+- ✅ Old logs compressed and deleted per policy
+- ✅ Services continue logging without interruption
+- ✅ Disk space usage stays under control
+- ✅ No manual intervention needed
+
+---
+
+## Task 1.12: Disk Space Crisis Management
+
+### 🎬 Real-World Scenario
+**URGENT**: Production server at 98% disk usage. Applications are failing. Database cannot write. You need to quickly identify what's using space and free up disk immediately without breaking anything.
+
+### ⏱️ Time to Complete: 60 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Quickly identify and resolve disk space issues on a production server while maintaining service availability.
+
+**Current Situation:**
+- /dev/sda1 mounted on / at 98% used
+- Services failing with "No space left on device"
+- Need to free at least 20GB immediately
+- Cannot reboot server (production)
+
+**Your Tasks:**
+1. Identify what's consuming disk space
+2. Safely remove/archive large files
+3. Implement immediate space reclamation
+4. Set up monitoring to prevent recurrence
+5. Document findings and actions taken
+
+### ✅ Validation Checklist
+
+- [ ] **Investigation**
+  - [ ] Disk usage by directory identified (du)
+  - [ ] Large files found (find)
+  - [ ] Deleted files still held open found (lsof)
+  - [ ] Log files checked for growth
+
+- [ ] **Immediate Actions**
+  - [ ] At least 20GB freed
+  - [ ] Services restored to normal operation
+  - [ ] No critical data deleted
+  - [ ] Backup created before deletion
+
+- [ ] **Monitoring Setup**
+  - [ ] Disk usage alerts configured
+  - [ ] Automated cleanup script created
+  - [ ] Log rotation verified
+  - [ ] Growth trend analysis performed
+
+### 📦 Required Deliverables
+
+1. **Investigation Report**
+   ```
+   # Disk Space Investigation
+   
+   ## Initial State
+   df -h: [output]
+   
+   ## Top Space Consumers
+   1. /var/log/old_logs: 15GB
+   2. /tmp/build-artifacts: 8GB
+   3. /opt/applications/cache: 5GB
+   4. Docker images: 12GB
+   
+   ## Files Deleted But Still Open
+   [lsof +L1 output]
+   ```
+
+2. **Cleanup Script** (`/usr/local/bin/emergency-cleanup.sh`)
+   ```bash
+   #!/bin/bash
+   # Emergency disk space cleanup
+   # Safe for production use
+   
+   # [Your script that:]
+   # - Archives old logs
+   # - Cleans temp files
+   # - Removes old backups
+   # - Cleans package cache
+   # - Removes old docker images/containers
+   ```
+
+3. **Monitoring Script** (`/usr/local/bin/disk-monitor.sh`)
+   ```bash
+   #!/bin/bash
+   # Alert when disk usage > 80%
+   ```
+
+4. **Action Log**
+   ```
+   # Actions Taken
+   [Timestamp] - Investigated disk usage
+   [Timestamp] - Archived /var/log/old_logs (15GB freed)
+   [Timestamp] - Deleted old build artifacts (8GB freed)
+   [Timestamp] - Cleared application cache (5GB freed)
+   [Timestamp] - Pruned docker images (12GB freed)
+   Total freed: 40GB
+   Current usage: 58%
+   ```
+
+### 🎯 Success Criteria
+- ✅ Freed at least 20GB within 30 minutes
+- ✅ All services operational
+- ✅ No data loss
+- ✅ Monitoring in place
+- ✅ Recurrence prevention implemented
+
+---
+
+## Task 1.13: Network Connectivity Troubleshooting
+
+### 🎬 Real-World Scenario
+Users report intermittent connectivity issues to your web application. Some requests succeed, others timeout. Database connections are dropping. You need to diagnose and fix the network issues.
+
+### ⏱️ Time to Complete: 75 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Diagnose and resolve network connectivity issues affecting production services.
+
+**Symptoms:**
+- Intermittent timeouts (works sometimes, fails other times)
+- Database connection errors
+- High latency on API calls
+- Some users affected, others not
+
+**Your Tasks:**
+1. Check network interface status and errors
+2. Test connectivity at each network layer
+3. Analyze DNS resolution
+4. Check firewall rules
+5. Monitor network traffic
+6. Identify and fix root cause
+
+### ✅ Validation Checklist
+
+- [ ] **Interface Status**
+  - [ ] Interface up and configured
+  - [ ] No packet drops or errors
+  - [ ] MTU settings correct
+  - [ ] Link speed verified
+
+- [ ] **Connectivity Tests**
+  - [ ] Ping to gateway successful
+  - [ ] Ping to external hosts works
+  - [ ] DNS resolution working
+  - [ ] Traceroute shows complete path
+
+- [ ] **Service-Level Tests**
+  - [ ] Application ports reachable
+  - [ ] Database connections stable
+  - [ ] API response times normal
+  - [ ] No packet loss
+
+- [ ] **Monitoring**
+  - [ ] Network metrics collected
+  - [ ] Baseline established
+  - [ ] Alerts configured
+  - [ ] Documentation updated
+
+### 📦 Required Deliverables
+
+1. **Network Diagnostic Report**
+   ```
+   # Network Troubleshooting Report
+   
+   ## Interface Status
+   [ip addr show]
+   [ethtool eth0]
+   
+   ## Connectivity Tests
+   Ping gateway: [result]
+   Ping external: [result]
+   DNS resolution: [result]
+   Traceroute: [result]
+   
+   ## Service Tests
+   Telnet to DB: [result]
+   Curl to API: [result]
+   
+   ## Identified Issues
+   1. [Issue]: [Description]
+      Root cause: [Cause]
+      Fix: [Action taken]
+   ```
+
+2. **Network Testing Script** (`/usr/local/bin/network-test.sh`)
+   ```bash
+   #!/bin/bash
+   # Comprehensive network connectivity test
+   
+   # Tests:
+   # - Interface status
+   # - Gateway reachability
+   # - DNS resolution
+   # - External connectivity
+   # - Service availability
+   # - Latency measurements
+   ```
+
+3. **Test Results**
+   ```bash
+   # Before fix
+   [show failing tests]
+   
+   # After fix
+   [show all tests passing]
+   ```
+
+### 🎯 Success Criteria
+- ✅ Root cause identified
+- ✅ Connectivity restored
+- ✅ No more timeouts
+- ✅ Latency within acceptable range
+- ✅ All services reachable
+- ✅ Monitoring in place
+
+---
+
+## Task 1.14: Systemd Timers for Scheduled Tasks
+
+### 🎬 Real-World Scenario
+Your team uses multiple cron jobs, but they're scattered across different files and hard to manage. You need to migrate critical scheduled tasks to systemd timers for better management, logging, and reliability.
+
+### ⏱️ Time to Complete: 60 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Convert existing cron jobs to systemd timers with proper service units.
+
+**Tasks to Convert:**
+1. Database backup (daily at 2 AM)
+2. Log cleanup (weekly)
+3. Health check report (every 15 minutes)
+4. Certificate renewal check (daily)
+
+**Requirements:**
+- Each timer has a corresponding service unit
+- Proper logging through journald
+- Error handling and notifications
+- Easy to enable/disable
+- Can run manually for testing
+
+### ✅ Validation Checklist
+
+- [ ] **Timer Units Created**
+  - [ ] .timer files in /etc/systemd/system/
+  - [ ] OnCalendar or OnUnitActiveSec configured
+  - [ ] Persistent=true for missed runs
+  - [ ] Accuracy settings appropriate
+
+- [ ] **Service Units Created**
+  - [ ] Corresponding .service files
+  - [ ] Type=oneshot for run-once tasks
+  - [ ] Proper error handling
+  - [ ] ExecStart commands tested
+
+- [ ] **Management**
+  - [ ] Timers enabled and started
+  - [ ] Can list all timers (systemctl list-timers)
+  - [ ] Can manually trigger (systemctl start)
+  - [ ] Logs available (journalctl -u)
+
+### 📦 Required Deliverables
+
+1. **Timer Configuration** (`backup.timer`)
+   ```ini
+   [Unit]
+   Description=Daily Database Backup Timer
+   
+   [Timer]
+   OnCalendar=daily
+   OnCalendar=02:00
+   Persistent=true
+   
+   [Install]
+   WantedBy=timers.target
+   ```
+
+2. **Service Configuration** (`backup.service`)
+   ```ini
+   [Unit]
+   Description=Database Backup Service
+   
+   [Service]
+   Type=oneshot
+   ExecStart=/usr/local/bin/backup-database.sh
+   User=postgres
+   ```
+
+3. **Management Commands**
+   ```bash
+   # Enable timer
+   sudo systemctl enable backup.timer
+   sudo systemctl start backup.timer
+   
+   # Check status
+   systemctl list-timers
+   systemctl status backup.timer
+   
+   # View logs
+   journalctl -u backup.service
+   
+   # Manual run
+   sudo systemctl start backup.service
+   ```
+
+4. **Migration Documentation**
+   ```
+   # Cron to Systemd Timer Migration
+   
+   ## Before (cron)
+   0 2 * * * /usr/local/bin/backup.sh
+   
+   ## After (systemd)
+   - backup.timer (schedule)
+   - backup.service (actual task)
+   
+   ## Benefits
+   - Better logging
+   - Dependency management
+   - Resource control
+   - Easier monitoring
+   ```
+
+### 🎯 Success Criteria
+- ✅ All timers running on schedule
+- ✅ Services execute successfully
+- ✅ Logs available in journalctl
+- ✅ Can manually trigger for testing
+- ✅ Old cron jobs disabled
+- ✅ Documentation complete
+
+---
+
+## Task 1.15: Security Incident Response
+
+### 🎬 Real-World Scenario
+**ALERT**: Unusual activity detected on production server. Multiple failed login attempts from unknown IPs. Possible compromise. You need to investigate immediately and secure the system.
+
+### ⏱️ Time to Complete: 90 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Investigate security alert, contain potential breach, and implement additional security measures.
+
+**Alerts Received:**
+- 500+ failed SSH attempts in last hour
+- New user account created: "backdoor"
+- Suspicious process consuming CPU
+- Outbound connections to unknown IPs
+
+**Your Tasks:**
+1. Investigate the alerts
+2. Contain the threat
+3. Analyze the extent of compromise
+4. Remove malicious elements
+5. Harden the system
+6. Document the incident
+
+### ✅ Validation Checklist
+
+- [ ] **Investigation**
+  - [ ] Failed login attempts analyzed
+  - [ ] Unauthorized accounts identified
+  - [ ] Suspicious processes found
+  - [ ] Network connections checked
+  - [ ] File integrity verified (AIDE)
+
+- [ ] **Containment**
+  - [ ] Suspicious accounts disabled/removed
+  - [ ] Malicious processes terminated
+  - [ ] Firewall rules tightened
+  - [ ] System isolated if needed
+
+- [ ] **Remediation**
+  - [ ] Malware removed
+  - [ ] Backdoors closed
+  - [ ] Passwords changed
+  - [ ] Keys rotated
+  - [ ] System hardened
+
+- [ ] **Documentation**
+  - [ ] Timeline of events
+  - [ ] Actions taken
+  - [ ] Impact assessment
+  - [ ] Lessons learned
+
+### 📦 Required Deliverables
+
+1. **Incident Response Report**
+   ```
+   # Security Incident Report
+   Date: [date]
+   Severity: [High/Medium/Low]
+   Status: [Contained/Resolved]
+   
+   ## Timeline
+   [HH:MM] - Alert received: Failed login attempts
+   [HH:MM] - Investigation started
+   [HH:MM] - Suspicious user found: backdoor
+   [HH:MM] - Malicious process identified: /tmp/miner
+   [HH:MM] - System contained
+   [HH:MM] - Cleanup completed
+   
+   ## Indicators of Compromise
+   - User: backdoor (UID 1337)
+   - Process: /tmp/miner (crypto miner)
+   - Connections: 185.220.101.x:8333
+   - Modified files: /etc/cron.d/persistence
+   
+   ## Actions Taken
+   1. Disabled backdoor account
+   2. Killed malicious process
+   3. Removed cron persistence
+   4. Blocked malicious IPs
+   5. Changed all passwords
+   6. Rotated SSH keys
+   
+   ## Impact Assessment
+   - Duration: X hours
+   - Data accessed: [Unknown/None/Limited]
+   - Services affected: [None/Some/All]
+   - Estimated cost: [Impact]
+   
+   ## Root Cause
+   - Weak SSH password
+   - Default credentials not changed
+   - No fail2ban configured
+   
+   ## Recommendations
+   1. Enforce SSH key-only authentication
+   2. Implement fail2ban
+   3. Regular security audits
+   4. Enable file integrity monitoring
+   5. Implement IDS/IPS
+   ```
+
+2. **Investigation Commands Used**
+   ```bash
+   # Check failed logins
+   sudo grep "Failed password" /var/log/auth.log | tail -100
+   
+   # Find suspicious users
+   sudo awk -F: '$3 >= 1000 {print $1}' /etc/passwd
+   
+   # Check running processes
+   ps auxf
+   top -bn1
+   
+   # Check network connections
+   sudo ss -tunapl
+   sudo netstat -ant
+   
+   # Check cron jobs
+   sudo cat /etc/cron.d/*
+   sudo crontab -l -u backdoor
+   
+   # Check file modifications
+   sudo find / -mtime -1 -type f
+   sudo aide --check
+   
+   # Check audit logs
+   sudo ausearch -m USER_AUTH -sv no
+   ```
+
+3. **Remediation Script** (`/usr/local/bin/incident-cleanup.sh`)
+   ```bash
+   #!/bin/bash
+   # Clean up after security incident
+   
+   # [Your script to:]
+   # - Remove backdoor accounts
+   # - Kill suspicious processes
+   # - Remove persistence mechanisms
+   # - Block malicious IPs
+   # - Harden system
+   ```
+
+4. **Post-Incident Hardening**
+   ```bash
+   # Additional security measures implemented
+   1. SSH key-only auth enforced
+   2. Fail2ban configured
+   3. AIDE scheduled daily
+   4. Additional audit rules
+   5. IDS installed (optional)
+   ```
+
+### 🎯 Success Criteria
+- ✅ Threat contained and removed
+- ✅ No ongoing malicious activity
+- ✅ System hardened
+- ✅ Incident fully documented
+- ✅ Lessons learned applied
+- ✅ Similar attacks prevented
+
+---
+
+## Task 1.16: DNS Configuration and Troubleshooting
+
+### 🎬 Real-World Scenario
+Your team is migrating to a new internal DNS setup. You need to configure DNS resolution on application servers and ensure all services can resolve internal and external hostnames correctly.
+
+### ⏱️ Time to Complete: 60 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Configure DNS resolution for internal and external domains with proper fallback and caching.
+
+**Requirements:**
+- Internal domains: *.company.internal → 10.0.0.10 (internal DNS)
+- External domains → 8.8.8.8, 1.1.1.1 (public DNS)
+- DNS caching for performance
+- Proper fallback if primary DNS fails
+- Fast failover (< 5 seconds)
+
+**Environment:**
+- Ubuntu 20.04
+- Systemd-resolved available
+- Internal DNS server: 10.0.0.10
+- Split DNS configuration needed
+
+### ✅ Validation Checklist
+
+- [ ] **DNS Configuration**
+  - [ ] systemd-resolved or dnsmasq configured
+  - [ ] Split DNS working (internal vs external)
+  - [ ] Fallback DNS configured
+  - [ ] DNS caching enabled
+
+- [ ] **Resolution Tests**
+  - [ ] Internal hostnames resolve correctly
+  - [ ] External hostnames resolve correctly
+  - [ ] Fast resolution times (< 100ms cached)
+  - [ ] Fallback works when primary DNS down
+
+- [ ] **Troubleshooting Tools**
+  - [ ] dig/nslookup available
+  - [ ] DNS query logging enabled (if needed)
+  - [ ] Resolution debugging possible
+
+### 📦 Required Deliverables
+
+1. **DNS Configuration** (`/etc/systemd/resolved.conf`)
+   ```ini
+   [Resolve]
+   DNS=10.0.0.10 8.8.8.8 1.1.1.1
+   FallbackDNS=8.8.4.4 1.0.0.1
+   Domains=~company.internal
+   Cache=yes
+   CacheFromLocalhost=no
+   DNSStubListener=yes
+   ```
+
+2. **Split DNS Configuration**
+   ```bash
+   # Configure internal DNS for .company.internal
+   # Configure public DNS for everything else
+   ```
+
+3. **DNS Testing Script** (`/usr/local/bin/test-dns.sh`)
+   ```bash
+   #!/bin/bash
+   # DNS Resolution Test Script
+   
+   echo "Testing DNS Resolution..."
+   
+   # Test internal domain
+   dig app.company.internal +short
+   
+   # Test external domain
+   dig google.com +short
+   
+   # Test resolution time
+   time dig google.com > /dev/null
+   
+   # Test DNS failover
+   # (simulate primary DNS down)
+   ```
+
+4. **Troubleshooting Guide**
+   ```
+   # DNS Troubleshooting Commands
+   
+   ## Check DNS configuration
+   systemd-resolve --status
+   cat /etc/resolv.conf
+   
+   ## Test resolution
+   dig example.com
+   nslookup example.com
+   host example.com
+   
+   ## Check which DNS server responded
+   dig example.com +trace
+   
+   ## Clear DNS cache
+   sudo systemd-resolve --flush-caches
+   
+   ## Monitor DNS queries
+   sudo tcpdump -i any port 53
+   
+   ## Common Issues
+   1. Slow resolution → check cache settings
+   2. Can't resolve internal → check split DNS
+   3. Intermittent failures → check fallback DNS
+   ```
+
+5. **Test Results**
+   ```bash
+   # Internal domain resolution
+   $ dig app.company.internal +short
+   10.0.1.100
+   
+   # External domain resolution
+   $ dig google.com +short
+   142.250.185.78
+   
+   # Resolution speed
+   $ time dig google.com > /dev/null
+   real    0m0.015s  # Fast (cached)
+   
+   # Fallback test
+   [show fallback working when primary DNS down]
+   ```
+
+### 🎯 Success Criteria
+- ✅ All internal domains resolve correctly
+- ✅ External domains resolve correctly
+- ✅ DNS caching improves performance
+- ✅ Fallback DNS works
+- ✅ Resolution time < 100ms (cached)
+- ✅ Split DNS properly configured
+
+---
+
+## Task 1.17: Process Priority Management
+
+### 🎬 Real-World Scenario
+Your batch processing job is consuming too much CPU and affecting interactive application performance. Users are experiencing slowness. You need to manage process priorities to ensure critical services perform well.
+
+### ⏱️ Time to Complete: 45 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Configure process priorities (nice/renice) and resource limits to ensure critical services get priority.
+
+**Current Situation:**
+- Batch job using 90% CPU
+- Web application sluggish
+- Database queries timing out
+- All processes running at default priority
+
+**Requirements:**
+- Lower batch job priority (nice +15)
+- Ensure web application runs at high priority (nice -5)
+- Database should have highest priority (nice -10)
+- Configure permanent priorities via systemd
+- Limit batch job to 50% CPU max
+
+### ✅ Validation Checklist
+
+- [ ] **Process Priorities**
+  - [ ] Batch jobs reniced to +15 or higher
+  - [ ] Web application at nice -5
+  - [ ] Database at nice -10
+  - [ ] Priorities persist across restarts
+
+- [ ] **Resource Limits**
+  - [ ] CPU limits configured
+  - [ ] Process count limits set
+  - [ ] Memory limits appropriate
+  - [ ] Limits enforced by systemd
+
+- [ ] **Testing**
+  - [ ] Application performance improved
+  - [ ] Batch job still completes
+  - [ ] No resource starvation
+  - [ ] Priorities working as expected
+
+### 📦 Required Deliverables
+
+1. **Process Priority Commands**
+   ```bash
+   # Check current priorities
+   ps -eo pid,ni,cmd --sort=ni
+   
+   # Renice running process
+   sudo renice -n 15 -p [PID]
+   
+   # Start process with priority
+   nice -n 15 /usr/local/bin/batch-job.sh
+   
+   # Change priority for all processes of user
+   sudo renice +10 -u batchuser
+   ```
+
+2. **Systemd Service Configuration** (for permanent priority)
+   ```ini
+   # /etc/systemd/system/batch-job.service
+   [Service]
+   Nice=15
+   CPUQuota=50%
+   MemoryLimit=2G
+   ```
+
+3. **Resource Monitoring Script**
+   ```bash
+   #!/bin/bash
+   # Monitor process priorities and resource usage
+   
+   watch -n 2 'ps -eo pid,ni,pcpu,pmem,cmd --sort=-pcpu | head -20'
+   ```
+
+4. **Before/After Comparison**
+   ```
+   # Before Priority Adjustment
+   Web app response time: 5 seconds
+   Batch job CPU: 90%
+   Database queries: timing out
+   
+   # After Priority Adjustment
+   Web app response time: 0.5 seconds
+   Batch job CPU: 50% (limited)
+   Database queries: normal
+   ```
+
+### 🎯 Success Criteria
+- ✅ Web application responsive
+- ✅ Database performs normally
+- ✅ Batch job completes (just slower)
+- ✅ CPU distributed fairly
+- ✅ Priorities persist across reboots
+- ✅ No process starvation
+
+---
+
+## Task 1.18: High CPU and Memory Troubleshooting
+
+### 🎬 Real-World Scenario
+**CRITICAL**: Production server CPU at 100%, memory exhausted, swap thrashing. Applications are crashing. You need to identify the culprit and resolve immediately without losing data.
+
+### ⏱️ Time to Complete: 75 minutes
+
+### 📋 Assignment Instructions
+
+**Your Mission:**
+Identify and resolve high CPU and memory usage causing production issues.
+
+**Symptoms:**
+- CPU at 95-100% constantly
+- Memory usage at 98%
+- Swap usage at 100%
+- System very slow/unresponsive
+- Applications crashing with OOM
+- Load average: 25, 30, 35 (2 CPU server)
+
+**Your Tasks:**
+1. Identify process(es) causing high CPU
+2. Identify memory leaks
+3. Analyze what triggered the issue
+4. Resolve without data loss
+5. Prevent recurrence
+6. Implement monitoring
+
+### ✅ Validation Checklist
+
+- [ ] **Investigation**
+  - [ ] Top CPU consumers identified
+  - [ ] Top memory consumers identified
+  - [ ] Load average analyzed
+  - [ ] OOM killer events checked
+  - [ ] Memory leak detected (if applicable)
+
+- [ ] **Resolution**
+  - [ ] Offending process handled appropriately
+  - [ ] CPU usage back to normal
+  - [ ] Memory usage reasonable
+  - [ ] Swap usage minimal
+  - [ ] Load average < number of CPUs
+
+- [ ] **Prevention**
+  - [ ] Resource limits configured
+  - [ ] Monitoring alerts set up
+  - [ ] Auto-restart configured for crashed services
+  - [ ] Memory leak fixed (if code issue)
+
+### 📦 Required Deliverables
+
+1. **Investigation Report**
+   ```
+   # High Resource Usage Investigation
+   
+   ## Initial State
+   Load Average: 25.23, 30.45, 35.67
+   CPU: 100%
+   Memory: 15.8G / 16G (98%)
+   Swap: 8G / 8G (100%)
+   
+   ## Top CPU Consumers
+   1. java (PID 1234): 85% CPU
+   2. postgres (PID 5678): 10% CPU
+   
+   ## Top Memory Consumers
+   1. java (PID 1234): 12G RAM
+   2. postgres (PID 5678): 2G RAM
+   
+   ## Root Cause
+   Java application memory leak
+   - Heap size: 12GB (max 12GB)
+   - Old Gen: 11.8GB (99%)
+   - GC thrashing
+   - Memory leak in cache implementation
+   
+   ## Resolution
+   1. Restarted Java application
+   2. Applied memory leak fix
+   3. Tuned JVM parameters
+   4. Configured proper limits
+   ```
+
+2. **Diagnostic Commands**
+   ```bash
+   # CPU Investigation
+   top -bn1
+   ps aux --sort=-%cpu | head -10
+   mpstat -P ALL 1 5
+   pidstat -u 1 5
+   
+   # Memory Investigation  
+   free -h
+   ps aux --sort=-%mem | head -10
+   pmap -x [PID]
+   smem -tk
+   
+   # Check OOM killer
+   dmesg | grep -i "out of memory"
+   grep -i "killed process" /var/log/syslog
+   
+   # Check swap usage
+   swapon --show
+   vmstat 1 5
+   
+   # Java-specific (if applicable)
+   jstat -gcutil [PID] 1000
+   jmap -heap [PID]
+   ```
+
+3. **Immediate Resolution Script**
+   ```bash
+   #!/bin/bash
+   # Emergency resource usage resolution
+   
+   # 1. Identify top CPU/memory process
+   TOP_CPU_PID=$(ps aux --sort=-%cpu | awk 'NR==2 {print $2}')
+   TOP_MEM_PID=$(ps aux --sort=-%mem | awk 'NR==2 {print $2}')
+   
+   # 2. Get process details
+   ps aux | grep $TOP_CPU_PID
+   
+   # 3. Check if it's a known service
+   # 4. Gracefully restart if possible
+   # 5. Or kill if necessary
+   
+   # 6. Clear cache if safe
+   sync; echo 3 > /proc/sys/vm/drop_caches
+   ```
+
+4. **Monitoring Configuration**
+   ```bash
+   # Set up alerts for high CPU/memory
+   # Alert if:
+   # - CPU > 80% for 5 minutes
+   # - Memory > 90% for 5 minutes
+   # - Swap > 50%
+   # - Load average > (cores * 2)
+   ```
+
+5. **Prevention Measures**
+   ```
+   # Implemented Prevention
+   
+   1. Resource Limits (systemd)
+   MemoryLimit=8G
+   CPUQuota=200%
+   
+   2. OOM Score Adjustment
+   OOMScoreAdjust=-500 (for critical services)
+   
+   3. Application Fixes
+   - Fixed memory leak
+   - Optimized queries
+   - Added connection pooling
+   
+   4. Monitoring
+   - CPU/Memory alerts
+   - Trend analysis
+   - Capacity planning
+   ```
+
+### 🎯 Success Criteria
+- ✅ CPU usage back to normal (< 70%)
+- ✅ Memory usage reasonable (< 80%)
+- ✅ No swap thrashing
+- ✅ Load average < 2x CPU count
+- ✅ Applications stable
+- ✅ Root cause identified and fixed
+- ✅ Monitoring prevents recurrence
+- ✅ No data loss during resolution
+
+---
+
+## All Real-World Tasks Complete! 🎉
+
+You now have **18 comprehensive, executable real-world tasks** for Linux server administration, each with:
+- Clear scenarios
+- Time estimates
+- Detailed instructions
+- Validation checklists
+- Expected deliverables
+- Success criteria
+
+These tasks are ready to be assigned to DevOps engineers for practical, hands-on learning and assessment.
 
 ---
 
