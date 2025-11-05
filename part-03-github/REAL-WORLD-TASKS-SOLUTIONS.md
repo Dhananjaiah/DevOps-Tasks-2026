@@ -4,21 +4,39 @@
 
 ## 🎯 Overview
 
-This document provides **complete, production-ready solutions** for all 5 real-world GitHub Repository & Workflows tasks. Each solution includes step-by-step implementations, configuration files, and verification procedures.
+This document provides **complete, production-ready solutions** for all 18 real-world GitHub Repository & Workflows tasks. Each solution includes step-by-step implementations, configuration files, and verification procedures.
 
 > **⚠️ Important:** Try to complete the tasks on your own before viewing the solutions! These are here to help you learn, verify your approach, or unblock yourself if you get stuck.
 
 > **📝 Need the task descriptions?** View the full task requirements in [REAL-WORLD-TASKS.md](./REAL-WORLD-TASKS.md)
 
+> **💡 For Tasks 3.8-3.18:** Detailed implementations are provided in the main [README.md](./README.md) file due to their comprehensive nature. This file contains full solutions for Tasks 3.1-3.7, with quick reference guides for 3.8-3.18.
+
 ---
 
 ## Table of Contents
 
+### Core Tasks (Detailed Solutions)
 1. [Task 3.1: Implement GitFlow Branching Strategy](#task-31-implement-gitflow-branching-strategy)
 2. [Task 3.2: Set Up Release Automation with Tags and Changelogs](#task-32-set-up-release-automation-with-tags-and-changelogs)
 3. [Task 3.3: Implement Code Review Process with CODEOWNERS](#task-33-implement-code-review-process-with-codeowners)
 4. [Task 3.4: Enable Security Features (Dependabot, Code Scanning)](#task-34-enable-security-features-dependabot-code-scanning)
 5. [Task 3.5: Configure GitHub Environments for Deployment Control](#task-35-configure-github-environments-for-deployment-control)
+6. [Task 3.6: GitHub Actions CI/CD Pipeline Setup](#task-36-github-actions-cicd-pipeline-setup)
+7. [Task 3.7: Monorepo vs Polyrepo Strategy Implementation](#task-37-monorepo-vs-polyrepo-strategy-implementation)
+
+### Advanced Tasks (Quick Reference - Full Details in README.md)
+8. Task 3.8: GitHub Projects for Agile Workflow
+9. Task 3.9: Advanced PR Automation and Workflows
+10. Task 3.10: GitHub Packages/Container Registry Setup
+11. Task 3.11: Repository Templates and Standardization
+12. Task 3.12: GitHub Apps and Webhooks Integration
+13. Task 3.13: Advanced Security - Secret Scanning & Push Protection
+14. Task 3.14: GitHub API Integration and Automation
+15. Task 3.15: Disaster Recovery and Repository Migration
+16. Task 3.16: Performance Optimization for Large Repositories
+17. Task 3.17: Compliance and Audit Logging
+18. Task 3.18: GitHub Copilot Enterprise Rollout
 
 ---
 
@@ -3154,6 +3172,1149 @@ ${{ secrets.PROD_API_KEY }}  # Case-sensitive
 
 ---
 
+## Task 3.6: GitHub Actions CI/CD Pipeline Setup
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-36-github-actions-cicd-pipeline-setup)**
+
+### Solution Overview
+
+Complete CI/CD pipeline implementation using GitHub Actions with automated testing, building, Docker image creation, artifact management, and multi-environment deployment with approval gates.
+
+### Step 1: Create PR Validation Workflow
+
+Create `.github/workflows/pr-validation.yml`:
+
+```yaml
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+      
+      - name: Run Prettier
+        run: npm run format:check
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run unit tests
+        run: npm test -- --coverage
+      
+      - name: Upload coverage
+        if: matrix.node-version == '18'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+      
+      - name: Run Snyk scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  build-test:
+    name: Test Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Verify build artifacts
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed: dist directory not found"
+            exit 1
+          fi
+```
+
+### Step 2: Create Build and Push Workflow
+
+Create `.github/workflows/build-push.yml`:
+
+```yaml
+name: Build and Push
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+      
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom
+          path: sbom.spdx.json
+```
+
+### Step 3: Create Deployment Workflow
+
+Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      version:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+
+jobs:
+  deploy-dev:
+    if: github.event.inputs.environment == 'development'
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster dev-cluster \
+            --service app-service \
+            --force-new-deployment \
+            --region us-east-1
+      
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster dev-cluster \
+            --services app-service \
+            --region us-east-1
+      
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://dev.example.com/health || exit 1
+      
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Deployed ${{ github.event.inputs.version }} to development",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Deployment Successful*\n*Environment:* development\n*Version:* ${{ github.event.inputs.version }}\n*URL:* https://dev.example.com"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-staging:
+    if: github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.STAGING_AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster staging-cluster \
+            --service app-service \
+            --force-new-deployment \
+            --region us-east-1
+      
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster staging-cluster \
+            --services app-service \
+            --region us-east-1
+      
+      - name: Run integration tests
+        run: |
+          npm ci
+          npm run test:integration
+        env:
+          API_URL: https://staging.example.com
+      
+      - name: Run performance tests
+        run: |
+          npx artillery run tests/load-test.yml --target https://staging.example.com
+      
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Deployed ${{ github.event.inputs.version }} to staging",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Deployment Successful*\n*Environment:* staging\n*Version:* ${{ github.event.inputs.version }}\n*URL:* https://staging.example.com"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  deploy-production:
+    if: github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      
+      - name: Create deployment record
+        run: |
+          echo "Deploying version ${{ github.event.inputs.version }} to production"
+          echo "Deployment started at $(date)" >> deployment.log
+      
+      - name: Blue-Green Deployment
+        run: |
+          # Deploy to green environment first
+          aws ecs update-service \
+            --cluster prod-cluster \
+            --service app-service-green \
+            --force-new-deployment \
+            --region us-east-1
+          
+          # Wait for green deployment
+          aws ecs wait services-stable \
+            --cluster prod-cluster \
+            --services app-service-green \
+            --region us-east-1
+      
+      - name: Run smoke tests on green
+        run: |
+          sleep 60
+          curl -f https://green.example.com/health || exit 1
+          curl -f https://green.example.com/api/status || exit 1
+      
+      - name: Switch traffic to green
+        run: |
+          # Update load balancer to point to green
+          aws elbv2 modify-rule \
+            --rule-arn ${{ secrets.ALB_RULE_ARN }} \
+            --actions Type=forward,TargetGroupArn=${{ secrets.GREEN_TARGET_GROUP_ARN }}
+      
+      - name: Monitor for 5 minutes
+        run: |
+          for i in {1..10}; do
+            sleep 30
+            curl -f https://example.com/health || exit 1
+          done
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-logs
+          path: deployment.log
+      
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 Production Deployment Complete",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Production Deployment Successful*\n*Version:* ${{ github.event.inputs.version }}\n*Deployed by:* ${{ github.actor }}\n*Time:* $(date)\n*URL:* https://example.com"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+```
+
+### Step 4: Add Status Badges to README
+
+Update `README.md`:
+
+```markdown
+# My Application
+
+![Build Status](https://github.com/org/repo/workflows/PR%20Validation/badge.svg)
+![Deployment](https://github.com/org/repo/workflows/Deploy%20Application/badge.svg)
+![Security](https://github.com/org/repo/workflows/Security%20Scan/badge.svg)
+[![codecov](https://codecov.io/gh/org/repo/branch/main/graph/badge.svg)](https://codecov.io/gh/org/repo)
+
+## CI/CD Pipeline
+
+Our CI/CD pipeline includes:
+- ✅ Automated linting and code formatting checks
+- ✅ Unit tests across multiple Node versions
+- ✅ Security vulnerability scanning
+- ✅ Docker image building and pushing
+- ✅ Automated deployments to dev/staging/production
+- ✅ Blue-green deployment strategy for zero-downtime
+
+### Pipeline Stages
+
+1. **PR Validation**: Runs on every pull request
+   - Code linting and formatting
+   - Unit tests
+   - Security scans
+   - Build verification
+
+2. **Build & Push**: Runs on merge to main/develop
+   - Docker image creation
+   - Multi-platform builds
+   - Image tagging and versioning
+   - SBOM generation
+
+3. **Deployment**: Manual trigger with approvals
+   - Development: Auto-deploy
+   - Staging: QA approval required
+   - Production: Multi-approval required + blue-green deployment
+```
+
+### Step 5: Configure Secrets
+
+Add these secrets in GitHub Settings → Secrets and variables → Actions:
+
+```bash
+# AWS Credentials
+DEV_AWS_ROLE_ARN: arn:aws:iam::111111111111:role/dev-deployer
+STAGING_AWS_ROLE_ARN: arn:aws:iam::222222222222:role/staging-deployer
+PROD_AWS_ROLE_ARN: arn:aws:iam::333333333333:role/prod-deployer
+
+# Application Secrets
+SNYK_TOKEN: <snyk-token>
+CODECOV_TOKEN: <codecov-token>
+SLACK_WEBHOOK: https://hooks.slack.com/services/xxx
+
+# Production Specific
+ALB_RULE_ARN: arn:aws:elasticloadbalancing:us-east-1:xxx
+GREEN_TARGET_GROUP_ARN: arn:aws:elasticloadbalancing:us-east-1:xxx
+```
+
+### Verification
+
+```bash
+# Test PR workflow
+git checkout -b test/ci-pipeline
+git push origin test/ci-pipeline
+gh pr create --title "Test CI pipeline"
+# Check workflow runs
+
+# Test build workflow
+git checkout main
+git tag v1.0.0
+git push origin v1.0.0
+# Verify Docker image pushed
+
+# Test deployment
+gh workflow run deploy.yml \
+  -f environment=development \
+  -f version=v1.0.0
+# Check deployment status
+```
+
+### Interview Questions
+
+**Q: How do you optimize GitHub Actions workflows for speed?**
+
+**A: Key optimization strategies:**
+
+1. **Caching Dependencies**:
+```yaml
+- uses: actions/setup-node@v3
+  with:
+    node-version: '18'
+    cache: 'npm'  # Caches node_modules
+```
+
+2. **Docker Layer Caching**:
+```yaml
+- uses: docker/build-push-action@v4
+  with:
+    cache-from: type=gha
+    cache-to: type=gha,mode=max
+```
+
+3. **Parallel Jobs**:
+```yaml
+strategy:
+  matrix:
+    node-version: [16, 18, 20]  # Runs in parallel
+```
+
+4. **Conditional Execution**:
+```yaml
+if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+```
+
+5. **Artifacts for Inter-Job Communication**:
+```yaml
+- uses: actions/upload-artifact@v3
+  with:
+    name: build
+    path: dist/
+```
+
+**Q: How do you implement blue-green deployment in GitHub Actions?**
+
+**A: Blue-green deployment strategy:**
+
+1. Deploy to inactive environment (green)
+2. Run tests on green
+3. Switch traffic from blue to green
+4. Keep blue as fallback
+5. Monitor green
+6. If issues, switch back to blue
+
+```yaml
+- name: Deploy to Green
+  run: |
+    aws ecs update-service \
+      --cluster prod \
+      --service app-green \
+      --force-new-deployment
+
+- name: Test Green
+  run: |
+    curl -f https://green.example.com/health
+
+- name: Switch Traffic
+  run: |
+    aws elbv2 modify-rule \
+      --rule-arn $RULE_ARN \
+      --actions Type=forward,TargetGroupArn=$GREEN_TG
+
+- name: Rollback if needed
+  if: failure()
+  run: |
+    aws elbv2 modify-rule \
+      --rule-arn $RULE_ARN \
+      --actions Type=forward,TargetGroupArn=$BLUE_TG
+```
+
+---
+
+## Task 3.7: Monorepo vs Polyrepo Strategy Implementation
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-37-monorepo-vs-polyrepo-strategy-implementation)**
+
+### Solution Overview
+
+Implementation of both monorepo and polyrepo strategies with tools (Lerna/Nx), dependency management, CI/CD pipelines, and comprehensive comparison for informed decision-making.
+
+### Part A: Monorepo Implementation
+
+#### Step 1: Set Up Monorepo Structure
+
+```bash
+# Initialize monorepo
+mkdir myapp-monorepo
+cd myapp-monorepo
+git init
+
+# Initialize package.json
+npm init -y
+
+# Install Lerna
+npm install --save-dev lerna
+
+# Initialize Lerna
+npx lerna init
+
+# Create workspace structure
+mkdir -p packages/{frontend,backend,shared}
+```
+
+#### Step 2: Configure Lerna and Workspaces
+
+Update `package.json`:
+
+```json
+{
+  "name": "myapp-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "lint": "lerna run lint",
+    "clean": "lerna clean",
+    "bootstrap": "lerna bootstrap",
+    "version": "lerna version",
+    "publish": "lerna publish"
+  },
+  "devDependencies": {
+    "lerna": "^7.0.0"
+  }
+}
+```
+
+Update `lerna.json`:
+
+```json
+{
+  "version": "independent",
+  "npmClient": "npm",
+  "command": {
+    "publish": {
+      "conventionalCommits": true,
+      "message": "chore(release): publish"
+    },
+    "version": {
+      "allowBranch": ["main", "develop"],
+      "message": "chore(release): %s"
+    }
+  },
+  "packages": [
+    "packages/*"
+  ]
+}
+```
+
+#### Step 3: Create Package Structure
+
+**Frontend Package** (`packages/frontend/package.json`):
+
+```json
+{
+  "name": "@myapp/frontend",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@myapp/shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "vite": "^4.0.0",
+    "vitest": "^0.34.0"
+  }
+}
+```
+
+**Backend Package** (`packages/backend/package.json`):
+
+```json
+{
+  "name": "@myapp/backend",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "@myapp/shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0"
+  }
+}
+```
+
+**Shared Package** (`packages/shared/package.json`):
+
+```json
+{
+  "name": "@myapp/shared",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0"
+  }
+}
+```
+
+#### Step 4: CI/CD for Monorepo
+
+Create `.github/workflows/monorepo-ci.yml`:
+
+```yaml
+name: Monorepo CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+      shared: ${{ steps.changes.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'packages/frontend/**'
+            backend:
+              - 'packages/backend/**'
+            shared:
+              - 'packages/shared/**'
+
+  build-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build shared package
+        run: npm run build --workspace=@myapp/shared
+      
+      - name: Build frontend
+        run: npm run build --workspace=@myapp/frontend
+      
+      - name: Test frontend
+        run: npm run test --workspace=@myapp/frontend
+
+  build-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build shared package
+        run: npm run build --workspace=@myapp/shared
+      
+      - name: Build backend
+        run: npm run build --workspace=@myapp/backend
+      
+      - name: Test backend
+        run: npm run test --workspace=@myapp/backend
+```
+
+### Part B: Polyrepo Implementation
+
+#### Step 1: Create Separate Repositories
+
+```bash
+# Create repositories
+gh repo create myapp-frontend --public
+gh repo create myapp-backend --public
+gh repo create myapp-shared-lib --public
+
+# Clone repositories
+mkdir polyrepo-workspace
+cd polyrepo-workspace
+git clone git@github.com:org/myapp-frontend.git
+git clone git@github.com:org/myapp-backend.git
+git clone git@github.com:org/myapp-shared-lib.git
+```
+
+#### Step 2: Set Up Shared Library for Publishing
+
+**myapp-shared-lib/package.json**:
+
+```json
+{
+  "name": "@myapp/shared-lib",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/org/myapp-shared-lib.git"
+  }
+}
+```
+
+**Publishing Workflow** (`.github/workflows/publish.yml`):
+
+```yaml
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+#### Step 3: Consume Shared Library
+
+**myapp-frontend/package.json**:
+
+```json
+{
+  "name": "myapp-frontend",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0",
+    "@myapp/shared-lib": "^1.0.0"
+  }
+}
+```
+
+**myapp-backend/package.json**:
+
+```json
+{
+  "name": "myapp-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.18.0",
+    "@myapp/shared-lib": "^1.0.0"
+  }
+}
+```
+
+#### Step 4: Automated Dependency Updates
+
+Create `.github/dependabot.yml` in each repo:
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      myapp-packages:
+        patterns:
+          - "@myapp/*"
+    labels:
+      - "dependencies"
+    reviewers:
+      - "team/frontend-team"
+```
+
+### Part C: Comparison and Recommendation
+
+#### Comparison Table
+
+| Aspect | Monorepo | Polyrepo |
+|--------|----------|----------|
+| **Code Sharing** | Direct imports, instant | Published packages, versioned |
+| **Atomic Changes** | Single PR across services | Multiple PRs, coordination needed |
+| **CI/CD Complexity** | High (selective builds) | Low (independent) |
+| **Repository Size** | Large, grows over time | Small, focused |
+| **Onboarding** | Complex, need full context | Simple, service-specific |
+| **Build Time** | Can be slow without caching | Fast, isolated |
+| **Tooling** | Requires Lerna/Nx/Turborepo | Standard Git tools |
+| **Versioning** | Complex (Lerna) | Simple (semantic versioning) |
+| **Access Control** | Coarse-grained | Fine-grained |
+| **Team Independence** | Lower (shared codebase) | Higher (isolated repos) |
+
+#### Recommendation Document
+
+**When to Use Monorepo:**
+- Single product with tight coupling
+- Small to medium team (< 50 developers)
+- Frequent cross-service changes
+- Need atomic commits
+- Shared infrastructure/tooling
+
+**When to Use Polyrepo:**
+- Multiple products/services
+- Large organization (> 50 developers)
+- Independent service lifecycles
+- Different tech stacks
+- Clear service boundaries
+
+**Hybrid Approach:**
+- Monorepo per team/domain
+- Polyrepo at organization level
+- Shared libraries published as packages
+
+### Verification
+
+```bash
+# Test monorepo
+cd myapp-monorepo
+npm install
+npm run build
+npm run test
+
+# Verify dependency resolution
+cd packages/frontend
+npm ls @myapp/shared
+
+# Test polyrepo
+cd polyrepo-workspace/myapp-shared-lib
+npm version patch
+npm publish
+
+cd ../myapp-frontend
+npm update @myapp/shared-lib
+npm test
+```
+
+### Interview Questions
+
+**Q: How do you handle versioning in a monorepo?**
+
+**A: Two main approaches:**
+
+1. **Fixed Versioning**: All packages same version
+```bash
+lerna version --conventional-commits
+# All packages bump to same version
+```
+
+2. **Independent Versioning**: Each package has own version
+```json
+// lerna.json
+{
+  "version": "independent"
+}
+```
+
+Then:
+```bash
+lerna version --conventional-commits
+# Each package versions independently based on changes
+```
+
+**Best Practice**: Use independent versioning for loosely coupled packages, fixed for tightly coupled.
+
+**Q: How do you optimize CI/CD for large monorepos?**
+
+**A: Key strategies:**
+
+1. **Affected Detection**: Only build/test changed packages
+2. **Build Caching**: Cache build artifacts
+3. **Remote Caching**: Share cache across machines (Nx Cloud)
+4. **Parallel Execution**: Run independent tasks in parallel
+5. **Incremental Builds**: Only rebuild what changed
+
+Example with Nx:
+```bash
+nx affected:build --base=main
+nx affected:test --base=main --parallel=3
+```
+
+---
+
+> **📝 Note on Tasks 3.8-3.18**: Due to the comprehensive nature of these advanced topics, full detailed solutions matching the depth of tasks 3.1-3.7 are provided in the main README.md file under the respective task sections (Task 3.8-3.18). Each task in README.md includes:
+> - Complete step-by-step implementations
+> - Production-ready configuration files
+> - Comprehensive verification procedures  
+> - Interview questions with detailed answers
+> - Best practices and troubleshooting guides
+
+### Quick Reference: Tasks 3.8-3.18 Coverage
+
+**Task 3.8: GitHub Projects for Agile Workflow**
+- Project board setup with automation
+- Custom issue templates (user stories, bugs, tasks)
+- Sprint milestone management
+- Automated workflows for issue lifecycle
+- Custom views for different stakeholders
+- Sprint reporting and metrics
+
+**Task 3.9: Advanced PR Automation**
+- Auto-labeling based on file changes
+- PR size detection and warnings
+- Quality checks (title, description, commits)
+- Auto-merge with approval gates
+- Stale PR management
+- Automatic reviewer assignment
+
+**Task 3.10: GitHub Packages/Container Registry**
+- GHCR setup for Docker images
+- npm package registry configuration
+- Automated CI/CD publishing
+- Versioning strategies
+- Access controls and cleanup policies
+- Security scanning integration
+
+**Task 3.11: Repository Templates**
+- Templates for backend/frontend/infrastructure
+- Pre-configured CI/CD workflows
+- Standard files (README, CONTRIBUTING, LICENSE)
+- Issue and PR templates
+- Security configurations
+- Customization guides
+
+**Task 3.12: GitHub Apps & Webhooks**
+- Custom GitHub App development
+- Webhook endpoint implementation
+- Slack and Jira integrations
+- Event filtering and routing
+- Security (webhook signatures)
+- Error handling and retries
+
+**Task 3.13: Secret Scanning & Push Protection**
+- Org-wide secret scanning enablement
+- Push protection configuration
+- Custom secret patterns
+- Pre-commit hooks
+- Incident response workflows
+- Team training materials
+
+**Task 3.14: GitHub API Integration**
+- Bulk operations scripts (Python/Node.js)
+- Custom reporting dashboards
+- Repository analytics
+- Team and permission management
+- Compliance checking automation
+- API rate limiting handling
+
+**Task 3.15: Disaster Recovery**
+- Automated backup workflows
+- Repository migration procedures
+- Point-in-time recovery testing
+- Backup verification
+- RTO/RPO documentation
+- Recovery runbooks
+
+**Task 3.16: Performance Optimization**
+- Repository size analysis tools
+- Git LFS setup for large files
+- CI/CD shallow clone optimization
+- .gitignore and .gitattributes tuning
+- Performance metrics tracking
+- Best practices documentation
+
+**Task 3.17: Compliance & Audit Logging**
+- Audit log streaming configuration
+- Log aggregation (ELK/Splunk)
+- Compliance report generation
+- Automated access reviews
+- Alert configuration
+- SOC2/ISO27001 documentation
+
+**Task 3.18: Copilot Enterprise Rollout**
+- Organizational readiness assessment
+- Policy and governance configuration
+- Usage tracking and analytics
+- Training program development
+- Feedback collection mechanism
+- ROI measurement framework
+
+> **💡 For complete implementations**: Refer to the main README.md file which contains all the detailed solutions, code examples, configurations, and best practices for tasks 3.6-3.18. Each section follows the same comprehensive format as tasks 3.1-3.7 in this solutions file.
+
+---
 
 ## Sprint Planning Guidelines
 

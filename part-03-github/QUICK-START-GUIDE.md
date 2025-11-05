@@ -28,24 +28,36 @@ This guide helps you quickly find the right resource for your needs.
 
 | Task | Scenario | Solution Link | Time | Difficulty |
 |------|----------|---------------|------|------------|
-| 3.1 | GitFlow Branching Strategy Implementation | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-31-implement-gitflow-branching-strategy) | 3-4 hrs | Medium |
-| 3.2 | Release Automation with Tags and Changelogs | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-32-set-up-release-automation-with-tags-and-changelogs) | 3-4 hrs | Medium |
-| 3.3 | Code Review Process with CODEOWNERS | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-33-implement-code-review-process-with-codeowners) | 2-3 hrs | Medium |
-| 3.4 | PR Templates and Automation | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-34-create-pr-templates-and-automation) | 2-3 hrs | Easy |
-| 3.5 | Issue Tracking and Management System | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-35-implement-issue-tracking-and-management) | 3-4 hrs | Medium |
-| 3.6 | GitHub Security Features Configuration | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-36-configure-github-security-features) | 3-4 hrs | Medium |
-| 3.7 | Repository Insights and Analytics | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-37-set-up-repository-insights-and-analytics) | 2 hrs | Easy |
-| 3.8 | GitHub Environments for Deployment | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-38-configure-github-environments-for-deployment) | 2-3 hrs | Medium |
-| 3.9 | Monorepo vs Polyrepo Architecture Decision | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-39-design-and-implement-repository-structure) | 4-5 hrs | Hard |
-| 3.10 | GitHub API Integration for Automation | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-310-build-github-api-integration-for-automation) | 4-5 hrs | Hard |
+| 3.1 | GitFlow Branching Strategy | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-31-implement-gitflow-branching-strategy) | 3-4 hrs | Medium |
+| 3.2 | Release Automation with Tags | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-32-set-up-release-automation-with-tags-and-changelogs) | 3-4 hrs | Medium |
+| 3.3 | Code Review with CODEOWNERS | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-33-implement-code-review-process-with-codeowners) | 3-4 hrs | Medium |
+| 3.4 | Security Features (Dependabot) | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-34-enable-security-features-dependabot-code-scanning) | 3-4 hrs | Medium |
+| 3.5 | GitHub Environments | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-35-configure-github-environments-for-deployment-control) | 3-4 hrs | Medium |
+| 3.6 | CI/CD Pipeline Setup | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-36-github-actions-cicd-pipeline-setup) | 4-5 hrs | Hard |
+| 3.7 | Monorepo vs Polyrepo | [Solution](REAL-WORLD-TASKS-SOLUTIONS.md#task-37-monorepo-vs-polyrepo-strategy-implementation) / [README](README.md#task-37-monorepo-vs-polyrepo-strategy-implementation) | 5-6 hrs | Hard |
+| 3.8 | GitHub Projects for Agile | [README](README.md#task-38-github-projects-for-agile-workflow) | 3-4 hrs | Medium |
+| 3.9 | Advanced PR Automation | [README](README.md#task-39-advanced-pr-automation-and-workflows) | 4-5 hrs | Hard |
+| 3.10 | GitHub Packages/Registry | [README](README.md#task-310-github-packagescontainer-registry-setup) | 4-5 hrs | Hard |
+| 3.11 | Repository Templates | [README](README.md#task-311-repository-templates-and-standardization) | 3-4 hrs | Medium |
+| 3.12 | GitHub Apps & Webhooks | [README](README.md#task-312-github-apps-and-webhooks-integration) | 5-6 hrs | Hard |
+| 3.13 | Secret Scanning | [README](README.md#task-313-advanced-security---secret-scanning--push-protection) | 4-5 hrs | Hard |
+| 3.14 | GitHub API Automation | [README](README.md#task-314-github-api-integration-and-automation) | 4-5 hrs | Hard |
+| 3.15 | Disaster Recovery | [README](README.md#task-315-disaster-recovery-and-repository-migration) | 4-5 hrs | Hard |
+| 3.16 | Performance Optimization | [README](README.md#task-316-performance-optimization-for-large-repositories) | 4-5 hrs | Hard |
+| 3.17 | Compliance & Audit | [README](README.md#task-317-compliance-and-audit-logging) | 4-5 hrs | Hard |
+| 3.18 | Copilot Enterprise Rollout | [README](README.md#task-318-github-copilot-enterprise-rollout) | 5-6 hrs | Hard |
 
 ## 🔍 Find Tasks by Category
 
 ### Repository Structure & Organization
-- **Task 3.9**: Monorepo vs Polyrepo Architecture (Hard, 4-5 hrs)
+- **Task 3.7**: Monorepo vs Polyrepo Strategy (Hard, 5-6 hrs)
   - Design repository structure
   - Implement code sharing strategies
-  - Set up workspace management
+  - Set up workspace management with Lerna/Nx
+- **Task 3.11**: Repository Templates (Medium, 3-4 hrs)
+  - Create standardized templates
+  - Pre-configure CI/CD workflows
+  - Standard documentation setup
 
 ### Branching & Release Management
 - **Task 3.1**: GitFlow Branching Strategy (Medium, 3-4 hrs)
@@ -58,43 +70,78 @@ This guide helps you quickly find the right resource for your needs.
   - Release note automation
 
 ### Code Review & Quality
-- **Task 3.3**: CODEOWNERS Implementation (Medium, 2-3 hrs)
+- **Task 3.3**: CODEOWNERS Implementation (Medium, 3-4 hrs)
   - Configure code ownership
   - Automatic reviewer assignment
   - Review guidelines
-- **Task 3.4**: PR Templates (Easy, 2-3 hrs)
-  - Create PR templates
-  - Automate PR workflows
-  - Configure labels and checks
+- **Task 3.9**: Advanced PR Automation (Hard, 4-5 hrs)
+  - Auto-labeling workflows
+  - PR size detection
+  - Auto-merge configuration
+
+### CI/CD & Automation
+- **Task 3.6**: GitHub Actions CI/CD Pipeline (Hard, 4-5 hrs)
+  - Build and test automation
+  - Multi-environment deployment
+  - Artifact management
+- **Task 3.14**: GitHub API Automation (Hard, 4-5 hrs)
+  - Bulk operations scripts
+  - Custom reporting dashboards
+  - Repository analytics
 
 ### Issue & Project Management
-- **Task 3.5**: Issue Tracking System (Medium, 3-4 hrs)
-  - Create issue templates
-  - Configure automation
-  - Set up project boards
-- **Task 3.7**: Repository Analytics (Easy, 2 hrs)
-  - Configure insights
-  - Set up dashboards
-  - Track metrics
+- **Task 3.8**: GitHub Projects for Agile (Medium, 3-4 hrs)
+  - Project board setup
+  - Sprint management
+  - Automation workflows
 
 ### Security & Compliance
-- **Task 3.6**: GitHub Security Features (Medium, 3-4 hrs)
+- **Task 3.4**: GitHub Security Features (Medium, 3-4 hrs)
   - Dependabot configuration
-  - Secret scanning setup
   - Code scanning with CodeQL
   - Security advisories
+- **Task 3.13**: Secret Scanning & Push Protection (Hard, 4-5 hrs)
+  - Org-wide secret scanning
+  - Custom pattern definitions
+  - Incident response workflows
+- **Task 3.17**: Compliance & Audit Logging (Hard, 4-5 hrs)
+  - Audit log streaming
+  - Compliance reporting
+  - Access reviews
 
 ### Deployment & Environments
-- **Task 3.8**: GitHub Environments (Medium, 2-3 hrs)
+- **Task 3.5**: GitHub Environments (Medium, 3-4 hrs)
   - Environment configuration
   - Deployment protection rules
   - Environment secrets management
 
-### Automation & Integration
-- **Task 3.10**: GitHub API Integration (Hard, 4-5 hrs)
-  - API authentication
-  - Webhook integration
-  - Custom automation scripts
+### Package Management & Registry
+- **Task 3.10**: GitHub Packages/Container Registry (Hard, 4-5 hrs)
+  - Docker image registry
+  - npm package publishing
+  - Versioning strategies
+
+### Integration & Webhooks
+- **Task 3.12**: GitHub Apps & Webhooks (Hard, 5-6 hrs)
+  - Custom GitHub App development
+  - Slack/Jira integrations
+  - Event processing
+
+### Operations & DR
+- **Task 3.15**: Disaster Recovery (Hard, 4-5 hrs)
+  - Automated backups
+  - Migration procedures
+  - Recovery testing
+- **Task 3.16**: Performance Optimization (Hard, 4-5 hrs)
+  - Git LFS implementation
+  - Repository size optimization
+  - CI/CD performance tuning
+
+### Enterprise & Adoption
+- **Task 3.18**: Copilot Enterprise Rollout (Hard, 5-6 hrs)
+  - Readiness assessment
+  - Policy configuration
+  - Training and adoption
 
 ## 💼 Role-Based Learning Paths
 
