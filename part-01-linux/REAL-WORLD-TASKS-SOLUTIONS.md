@@ -1318,7 +1318,6 @@ EnvironmentFile=-/etc/backend-api/environment
 
 # Start command
 ExecStart=/usr/bin/node /opt/applications/backend/server.js
-ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
 
 # Restart policy
@@ -3221,7 +3220,9 @@ sudo tee /etc/logrotate.d/applications > /dev/null <<'APPLOGS'
     dateformat -%Y%m%d
     sharedscripts
     postrotate
-        systemctl reload-or-restart backend-api frontend worker > /dev/null 2>&1 || true
+        systemctl reload backend-api > /dev/null 2>&1 || true
+        systemctl reload frontend > /dev/null 2>&1 || true
+        systemctl reload worker > /dev/null 2>&1 || true
     endscript
 }
 APPLOGS
