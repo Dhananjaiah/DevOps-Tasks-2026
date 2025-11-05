@@ -20,6 +20,7 @@ We now offer **practical, time-bound tasks** you can execute immediately across 
 - ✅ **Part 8 - Jenkins**: 5 CI/CD tasks ([Tasks](./part-08-jenkins/REAL-WORLD-TASKS.md) | [Solutions](./part-08-jenkins/REAL-WORLD-TASKS-SOLUTIONS.md))
 - ✅ **Part 9 - GitHub Actions**: 5 workflow tasks ([Tasks](./part-09-github-actions/REAL-WORLD-TASKS.md) | [Solutions](./part-09-github-actions/REAL-WORLD-TASKS-SOLUTIONS.md))
 - ✅ **Part 10 - Prometheus**: 5 monitoring tasks ([Tasks](./part-10-prometheus/REAL-WORLD-TASKS.md) | [Solutions](./part-10-prometheus/REAL-WORLD-TASKS-SOLUTIONS.md))
+- ✅ **Part 11 - Docker**: 18 containerization tasks ([Tasks](./part-11-docker/REAL-WORLD-TASKS.md) | [Solutions](./part-11-docker/REAL-WORLD-TASKS-SOLUTIONS.md))
 
 ### 🎯 Task Features
 
@@ -41,7 +42,8 @@ All tasks are built around a **production-grade 3-tier web application**:
 
 **Infrastructure Stack**:
 - **Cloud Provider**: AWS
-- **Orchestration**: Kubernetes (EKS)
+- **Containers**: Docker & Docker Compose
+- **Orchestration**: Kubernetes (EKS) & Docker Swarm
 - **CI/CD**: Jenkins & GitHub Actions
 - **Monitoring**: Prometheus + Grafana
 - **IaC**: Terraform
@@ -234,15 +236,37 @@ Production observability with Prometheus.
 11. **Task 10.11**: Integration with Slack/Email
 12. **Task 10.12**: Grafana Dashboard Design (Conceptual)
 
+### [Part 11: Docker Containerization & Operations](./part-11-docker/README.md)
+Comprehensive Docker skills for production containerization.
+
+1.  **Task 11.1**: Containerize Multi-Tier Application
+2.  **Task 11.2**: Docker Compose Production Setup
+3.  **Task 11.3**: Docker Networking Configuration
+4.  **Task 11.4**: Persistent Data Management with Volumes
+5.  **Task 11.5**: Private Docker Registry Setup
+6.  **Task 11.6**: Container Security Hardening
+7.  **Task 11.7**: Docker Image Optimization
+8.  **Task 11.8**: Container Monitoring and Logging
+9.  **Task 11.9**: Docker Swarm Cluster Deployment
+10. **Task 11.10**: Vulnerability Scanning Pipeline
+11. **Task 11.11**: BuildKit and Multi-Platform Builds
+12. **Task 11.12**: Container Resource Limits and Management
+13. **Task 11.13**: Advanced Container Debugging
+14. **Task 11.14**: CI/CD Pipeline Docker Integration
+15. **Task 11.15**: Docker Backup and Disaster Recovery
+16. **Task 11.16**: Legacy Application Containerization
+17. **Task 11.17**: Health Checks and Self-Healing
+18. **Task 11.18**: Production Docker Deployment
+
 ---
 
 ## 📅 Sprint Planning with Real-World Tasks
 
 ### Task Story Point Distribution
 
-- **67 Total Tasks** across all tools
-- **0.5 Story Points** (Simple): ~35 tasks - Perfect for 1-2 day completion
-- **1 Story Point** (Medium): ~32 tasks - Ideal for 2-3 day completion
+- **85 Total Tasks** across all tools
+- **0.5 Story Points** (Simple): ~43 tasks - Perfect for 1-2 day completion
+- **1 Story Point** (Medium): ~42 tasks - Ideal for 2-3 day completion
 
 ### Sample 2-Week Sprint Plan
 
@@ -267,19 +291,22 @@ Production observability with Prometheus.
 ## 🎓 Learning Path
 
 ### Beginner Track (Foundation)
-Start with: **Part 1 (Linux)** → **Part 2 (Bash)** → **Part 3 (GitHub)**
+Start with: **Part 1 (Linux)** → **Part 2 (Bash)** → **Part 3 (GitHub)** → **Part 11 (Docker Basics)**
 - Focus on real-world tasks marked as 0.5 story points
 - Build strong fundamentals before moving forward
+- Master containerization early - it's essential for modern DevOps
 
-### Intermediate Track (Infrastructure)
-Continue with: **Part 4 (Ansible)** → **Part 5 (AWS)** → **Part 6 (Terraform)**
+### Intermediate Track (Infrastructure & Containers)
+Continue with: **Part 11 (Docker Advanced)** → **Part 4 (Ansible)** → **Part 5 (AWS)** → **Part 6 (Terraform)**
 - Mix of 0.5 and 1 story point tasks
 - Understand infrastructure as code principles
+- Deep dive into container orchestration and management
 
 ### Advanced Track (Orchestration & Observability)
 Master: **Part 7 (Kubernetes)** → **Part 8 or 9 (CI/CD)** → **Part 10 (Prometheus)**
 - Tackle complex 1 story point tasks
 - Implement complete production systems
+- Integrate Docker into CI/CD pipelines
 
 ---
 
