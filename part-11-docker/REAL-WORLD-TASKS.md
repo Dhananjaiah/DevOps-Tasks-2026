@@ -1338,8 +1338,8 @@ Execute a production deployment of Docker-based application with all production 
 ## 📊 Difficulty Distribution
 
 - **Easy (2 tasks)**: 11.12, 11.17
-- **Medium (11 tasks)**: 11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.10, 11.11, 11.13, 11.15, 11.17
-- **Hard (5 tasks)**: 11.6, 11.8, 11.9, 11.14, 11.16, 11.18
+- **Medium (10 tasks)**: 11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.10, 11.11, 11.13, 11.15
+- **Hard (6 tasks)**: 11.6, 11.8, 11.9, 11.14, 11.16, 11.18
 
 Total: **18 tasks** covering all aspects of Docker for DevOps
 
