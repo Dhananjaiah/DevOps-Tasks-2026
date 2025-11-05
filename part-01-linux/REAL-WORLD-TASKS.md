@@ -1,5 +1,7 @@
 # Part 1: Linux Real-World Tasks for DevOps Engineers
 
+> **📚 Navigation:** [Solutions →](./REAL-WORLD-TASKS-SOLUTIONS.md) | [Part 1 README](./README.md) | [Main README](../README.md)
+
 ## 🎯 Overview
 
 This document provides **real-world, executable tasks** that you can assign to DevOps engineers. Each task includes:
@@ -10,6 +12,8 @@ This document provides **real-world, executable tasks** that you can assign to D
 - **Expected deliverables**
 
 These tasks are designed to be practical assignments that simulate actual production work.
+
+> **💡 Looking for solutions?** Complete solutions with step-by-step implementations are available in [REAL-WORLD-TASKS-SOLUTIONS.md](./REAL-WORLD-TASKS-SOLUTIONS.md)
 
 ---
 
@@ -30,7 +34,36 @@ These tasks are designed to be practical assignments that simulate actual produc
 
 ---
 
+## 📑 Task Index
+
+Quick navigation to tasks and their solutions:
+
+| # | Task Name | Difficulty | Time | Solution Link |
+|---|-----------|------------|------|---------------|
+| 1.1 | [Production Server Hardening](#task-11-production-server-hardening) | Medium | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-11-production-server-hardening) |
+| 1.2 | [SSH Key Management](#task-12-ssh-key-management-for-team-access) | Medium | 60 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-12-ssh-key-management-for-team-access) |
+| 1.3 | [User and Group Management](#task-13-user-and-group-management-for-application-deployment) | Medium | 75 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-13-user-and-group-management-for-application-deployment) |
+| 1.4 | [Filesystem Management and Quota Setup](#task-14-filesystem-management-and-quota-setup) | Hard | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-14-filesystem-management-and-quota-setup) |
+| 1.5 | [Systemd Service Creation](#task-15-systemd-service-creation-for-backend-api) | Medium | 60 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-15-systemd-service-creation-for-backend-api) |
+| 1.6 | [Firewall Configuration](#task-16-firewall-configuration-for-multi-tier-application) | Medium | 75 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-16-firewall-configuration-for-multi-tier-application) |
+| 1.7 | [Centralized Logging](#task-17-centralized-logging-setup-with-journald) | Medium | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-17-centralized-logging-setup-with-journald) |
+| 1.8 | [Performance Monitoring](#task-18-performance-monitoring-and-troubleshooting) | Hard | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-18-performance-monitoring-and-troubleshooting) |
+| 1.9 | [Package Management](#task-19-package-management-and-custom-repository) | Medium | 75 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-19-package-management-and-custom-repository) |
+| 1.10 | [PostgreSQL Backup Automation](#task-110-postgresql-backup-automation) | Hard | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-110-postgresql-backup-automation) |
+| 1.11 | [Log Rotation Configuration](#task-111-log-rotation-configuration) | Easy | 45 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-111-log-rotation-configuration) |
+| 1.12 | [Disk Space Crisis Management](#task-112-disk-space-crisis-management) | Medium | 60 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-112-disk-space-crisis-management) |
+| 1.13 | [Network Troubleshooting](#task-113-network-connectivity-troubleshooting) | Medium | 75 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-113-network-connectivity-troubleshooting) |
+| 1.14 | [Systemd Timers](#task-114-systemd-timers-for-scheduled-tasks) | Medium | 60 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-114-systemd-timers-for-scheduled-tasks) |
+| 1.15 | [Security Incident Response](#task-115-security-incident-response) | Hard | 90 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-115-security-incident-response) |
+| 1.16 | [DNS Configuration](#task-116-dns-configuration-and-troubleshooting) | Medium | 60 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-116-dns-configuration-and-troubleshooting) |
+| 1.17 | [Process Priority Management](#task-117-process-priority-management) | Easy | 45 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-117-process-priority-management) |
+| 1.18 | [High CPU/Memory Troubleshooting](#task-118-high-cpu-and-memory-troubleshooting) | Hard | 75 min | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-118-high-cpu-and-memory-troubleshooting) |
+
+---
+
 ## Task 1.1: Production Server Hardening
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-11-production-server-hardening)**
 
 ### 🎬 Real-World Scenario
 Your company is launching a new web application. You've been assigned to harden a new Ubuntu 20.04 EC2 instance that will host the backend API. The instance must meet security compliance requirements before the application can be deployed.
@@ -153,6 +186,8 @@ Your hardening is successful if:
 ---
 
 ## Task 1.2: SSH Key Management for Team Access
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-12-ssh-key-management-for-team-access)**
 
 ### 🎬 Real-World Scenario
 Your team is growing. You need to set up secure SSH access for 3 new DevOps engineers joining next week. Each engineer needs access to production servers with different permission levels. You must implement key-based authentication with proper access controls.
@@ -286,6 +321,8 @@ Set up SSH key-based authentication for 3 team members with different access lev
 ---
 
 ## Task 1.3: User and Group Management for Application Deployment
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-13-user-and-group-management-for-application-deployment)**
 
 ### 🎬 Real-World Scenario
 Your company is deploying a new microservices application. You need to set up proper user and group structures for the deployment pipeline. The CI/CD system needs limited access to deploy apps, developers need read-only access for debugging, and the applications themselves need minimal privileges to run.
@@ -456,6 +493,8 @@ Create a secure user and group structure for a multi-tier application with prope
 
 ## Task 1.4: Filesystem Management and Quota Setup
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-14-filesystem-management-and-quota-setup)**
+
 ### 🎬 Real-World Scenario
 Your application generates large amounts of log files and user uploads. The disk on your production server is 100GB, and you've noticed the /var partition is filling up quickly. You need to implement a proper filesystem structure with quotas to prevent any single service from filling the disk.
 
@@ -613,6 +652,8 @@ Set up proper filesystem management with disk quotas for application services.
 ---
 
 ## Task 1.5: Systemd Service Creation for Backend API
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-15-systemd-service-creation-for-backend-api)**
 
 ### 🎬 Real-World Scenario
 Your team has developed a Node.js backend API that needs to run as a service on the production server. The application must start automatically on boot, restart on failure, and be manageable through systemctl. You need to create a robust systemd service unit.
@@ -808,6 +849,8 @@ Create and configure a production-ready systemd service for a backend API applic
 
 ## Task 1.6: Firewall Configuration for Multi-Tier Application
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-16-firewall-configuration-for-multi-tier-application)**
+
 ### 🎬 Real-World Scenario
 Your company runs a 3-tier web application: frontend (port 80/443), backend API (port 8080), and PostgreSQL database (port 5432). Currently, all ports are open, which is a security risk. You need to configure firewall rules that allow only necessary traffic between components while blocking everything else.
 
@@ -974,6 +1017,8 @@ Internet → Frontend (80/443) → Backend API (8080) → PostgreSQL (5432)
 ---
 
 ## Task 1.7: Centralized Logging Setup with Journald
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-17-centralized-logging-setup-with-journald)**
 
 ### 🎬 Real-World Scenario
 Your team manages 5 application servers, and troubleshooting issues requires checking logs on each server individually. This is time-consuming and inefficient. You need to set up centralized logging and implement log analysis procedures for faster incident response.
@@ -1166,6 +1211,8 @@ Configure centralized logging using journald and rsyslog, implement log rotation
 ---
 
 ## Task 1.8: Performance Monitoring and Troubleshooting
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-18-performance-monitoring-and-troubleshooting)**
 
 ### 🎬 Real-World Scenario
 Users are complaining about slow response times. Your manager asks you to investigate and identify the bottleneck. You need to set up performance monitoring, collect metrics, analyze system performance, and provide a detailed report with recommendations.
@@ -1462,6 +1509,8 @@ Investigate system performance issues, identify bottlenecks, and implement monit
 
 ## Task 1.9: Package Management and Custom Repository
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-19-package-management-and-custom-repository)**
+
 ### 🎬 Real-World Scenario
 Your company develops internal tools that need to be distributed to all servers. Managing manual installations is error-prone. You need to set up a custom APT repository for internal packages and implement a standardized package management procedure.
 
@@ -1682,6 +1731,8 @@ Create a custom APT repository, package an internal application, and set up auto
 ---
 
 ## Task 1.10: PostgreSQL Backup Automation
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-110-postgresql-backup-automation)**
 
 ### 🎬 Real-World Scenario
 Your production PostgreSQL database contains critical business data. Currently, there's no backup system in place. You need to implement an automated backup solution with retention policies, backup verification, and disaster recovery procedures.
@@ -2024,6 +2075,8 @@ Implement a comprehensive PostgreSQL backup and recovery system with automation.
 
 ## Task 1.11: Log Rotation Configuration
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-111-log-rotation-configuration)**
+
 ### 🎬 Real-World Scenario
 Your application servers are running out of disk space because application logs are growing unchecked. A production server went down last week when /var filled up completely. You need to implement comprehensive log rotation to prevent this from happening again.
 
@@ -2112,6 +2165,8 @@ Configure logrotate for all application and system logs with appropriate retenti
 ---
 
 ## Task 1.12: Disk Space Crisis Management
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-112-disk-space-crisis-management)**
 
 ### 🎬 Real-World Scenario
 **URGENT**: Production server at 98% disk usage. Applications are failing. Database cannot write. You need to quickly identify what's using space and free up disk immediately without breaking anything.
@@ -2217,6 +2272,8 @@ Quickly identify and resolve disk space issues on a production server while main
 ---
 
 ## Task 1.13: Network Connectivity Troubleshooting
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-113-network-connectivity-troubleshooting)**
 
 ### 🎬 Real-World Scenario
 Users report intermittent connectivity issues to your web application. Some requests succeed, others timeout. Database connections are dropping. You need to diagnose and fix the network issues.
@@ -2328,6 +2385,8 @@ Diagnose and resolve network connectivity issues affecting production services.
 ---
 
 ## Task 1.14: Systemd Timers for Scheduled Tasks
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-114-systemd-timers-for-scheduled-tasks)**
 
 ### 🎬 Real-World Scenario
 Your team uses multiple cron jobs, but they're scattered across different files and hard to manage. You need to migrate critical scheduled tasks to systemd timers for better management, logging, and reliability.
@@ -2445,6 +2504,8 @@ Convert existing cron jobs to systemd timers with proper service units.
 ---
 
 ## Task 1.15: Security Incident Response
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-115-security-incident-response)**
 
 ### 🎬 Real-World Scenario
 **ALERT**: Unusual activity detected on production server. Multiple failed login attempts from unknown IPs. Possible compromise. You need to investigate immediately and secure the system.
@@ -2611,6 +2672,8 @@ Investigate security alert, contain potential breach, and implement additional s
 
 ## Task 1.16: DNS Configuration and Troubleshooting
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-116-dns-configuration-and-troubleshooting)**
+
 ### 🎬 Real-World Scenario
 Your team is migrating to a new internal DNS setup. You need to configure DNS resolution on application servers and ensure all services can resolve internal and external hostnames correctly.
 
@@ -2750,6 +2813,8 @@ Configure DNS resolution for internal and external domains with proper fallback 
 
 ## Task 1.17: Process Priority Management
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-117-process-priority-management)**
+
 ### 🎬 Real-World Scenario
 Your batch processing job is consuming too much CPU and affecting interactive application performance. Users are experiencing slowness. You need to manage process priorities to ensure critical services perform well.
 
@@ -2851,6 +2916,8 @@ Configure process priorities (nice/renice) and resource limits to ensure critica
 ---
 
 ## Task 1.18: High CPU and Memory Troubleshooting
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-118-high-cpu-and-memory-troubleshooting)**
 
 ### 🎬 Real-World Scenario
 **CRITICAL**: Production server CPU at 100%, memory exhausted, swap thrashing. Applications are crashing. You need to identify the culprit and resolve immediately without losing data.

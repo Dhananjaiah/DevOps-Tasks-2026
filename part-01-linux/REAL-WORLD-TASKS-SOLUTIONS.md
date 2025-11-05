@@ -1,6 +1,14 @@
 # Part 1: Linux Real-World Tasks - Complete Solutions Guide
 
+> **📚 Navigation:** [← Back to Tasks](./REAL-WORLD-TASKS.md) | [Part 1 README](./README.md) | [Main README](../README.md)
+
+## 🎯 Overview
+
 This document provides **complete, production-ready solutions** for all 18 real-world Linux tasks. Each solution includes step-by-step commands, configuration files, scripts, and verification procedures.
+
+> **⚠️ Important:** Try to complete the tasks on your own before viewing the solutions! These are here to help you learn, verify your approach, or unblock yourself if you get stuck.
+
+> **📝 Need the task descriptions?** View the full task requirements in [REAL-WORLD-TASKS.md](./REAL-WORLD-TASKS.md)
 
 ---
 
@@ -28,6 +36,8 @@ This document provides **complete, production-ready solutions** for all 18 real-
 ---
 
 ## Task 1.1: Production Server Hardening
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-11-production-server-hardening)**
 
 ### Solution Overview
 
@@ -415,6 +425,8 @@ echo "=== Verification Complete ==="
 
 ## Task 1.2: SSH Key Management for Team Access
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-12-ssh-key-management-for-team-access)**
+
 ### Solution Overview
 
 Complete SSH key management solution with proper access controls for team members.
@@ -697,6 +709,8 @@ echo "=== Tests Complete ==="
 
 ## Task 1.3: User and Group Management for Application Deployment
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-13-user-and-group-management-for-application-deployment)**
+
 ### Solution Overview
 
 This solution creates a secure user and group structure for multi-tier application deployment.
@@ -962,6 +976,8 @@ echo "=== Tests Complete ==="
 ---
 
 ## Task 1.4: Filesystem Management and Quota Setup
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-14-filesystem-management-and-quota-setup)**
 
 ### Solution Overview
 
@@ -1288,6 +1304,8 @@ sudo repquota -a
 
 ## Task 1.5: Systemd Service Creation for Backend API
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-15-systemd-service-creation-for-backend-api)**
+
 ### Solution Overview
 
 Complete systemd service configuration for Node.js backend API with proper resource limits and security hardening.
@@ -1592,6 +1610,8 @@ echo "=== Tests Complete ==="
 
 ## Task 1.6: Firewall Configuration for Multi-Tier Application
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-16-firewall-configuration-for-multi-tier-application)**
+
 ### Solution Overview
 
 Complete firewall configuration for 3-tier application with proper network segmentation.
@@ -1818,6 +1838,8 @@ sudo ufw status verbose
 ---
 
 ## Task 1.7: Centralized Logging Setup with Journald
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-17-centralized-logging-setup-with-journald)**
 
 ### Solution Overview
 
@@ -2072,6 +2094,8 @@ echo "=== Tests Complete ==="
 *Continuing with remaining tasks...*
 
 ## Task 1.8: Performance Monitoring and Troubleshooting
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-18-performance-monitoring-and-troubleshooting)**
 
 ### Solution Overview
 
@@ -2420,6 +2444,8 @@ EOF
 
 ## Task 1.9: Package Management and Custom Repository
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-19-package-management-and-custom-repository)**
+
 ### Solution Overview
 
 Complete solution for creating custom APT repository and managing internal packages.
@@ -2739,6 +2765,8 @@ echo "Repository updated successfully"
 ---
 
 ## Task 1.10: PostgreSQL Backup Automation
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-110-postgresql-backup-automation)**
 
 ### Solution Overview
 
@@ -3108,6 +3136,8 @@ echo "=== Monitor Complete ==="
 
 ## Task 1.11: Log Rotation Configuration
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-111-log-rotation-configuration)**
+
 ### Solution Overview
 
 Comprehensive log rotation solution for all system and application logs.
@@ -3298,6 +3328,8 @@ find /var/log -name "*.1" -o -name "*.gz" -mtime -1 | head -20
 
 ## Task 1.12: Disk Space Crisis Management
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-112-disk-space-crisis-management)**
+
 ### Solution Overview
 
 Emergency disk space cleanup procedures and prevention measures.
@@ -3452,6 +3484,8 @@ check_and_alert
 *The file now contains comprehensive solutions for tasks 1.1 through 1.12. Continuing with tasks 1.13-1.18...*
 
 ## Task 1.13: Network Connectivity Troubleshooting
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-113-network-connectivity-troubleshooting)**
 
 ### Solution Overview
 
@@ -3682,6 +3716,8 @@ mtr -r -c 10 "$TARGET"
 ---
 
 ## Task 1.14: Systemd Timers for Scheduled Tasks
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-114-systemd-timers-for-scheduled-tasks)**
 
 ### Solution Overview
 
@@ -3921,6 +3957,8 @@ esac
 
 ## Task 1.15: Security Incident Response
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-115-security-incident-response)**
+
 ### Solution Overview
 
 Complete security incident response procedures and forensics tools.
@@ -4152,6 +4190,8 @@ echo "Incident report template created: /tmp/incident-report-$(date +%Y%m%d).md"
 
 ## Task 1.16: DNS Configuration and Troubleshooting
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-116-dns-configuration-and-troubleshooting)**
+
 ### Solution Overview
 
 Complete DNS configuration with systemd-resolved and troubleshooting procedures.
@@ -4297,6 +4337,8 @@ dig google.com +short && echo "✓ DNS working" || echo "✗ DNS still not worki
 
 ## Task 1.17: Process Priority Management
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-117-process-priority-management)**
+
 ### Solution Overview
 
 Complete process priority management with nice, renice, and systemd controls.
@@ -4408,6 +4450,8 @@ ps -eo pid,ni,pri,pcpu,pmem,cmd --sort=ni | head -20
 ---
 
 ## Task 1.18: High CPU and Memory Troubleshooting
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-118-high-cpu-and-memory-troubleshooting)**
 
 ### Solution Overview
 
