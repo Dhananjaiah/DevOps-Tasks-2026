@@ -1,16 +1,35 @@
 # Part 2: Bash Scripting Real-World Tasks for DevOps Engineers
 
+> **📚 Navigation:** [Solutions →](./REAL-WORLD-TASKS-SOLUTIONS.md) | [Part 2 README](./README.md) | [Quick Start](./QUICK-START-GUIDE.md) | [Navigation Guide](./NAVIGATION-GUIDE.md) | [Main README](../README.md)
+
 ## 🎯 Overview
 
 This document provides **real-world, executable Bash scripting tasks** designed as sprint assignments. Each task simulates actual production automation scenarios that DevOps engineers face daily.
 
 **What You'll Find:**
 - Clear scenarios with business context
-- Time estimates for sprint planning
+- Time estimates for sprint planning (2-5 hours per task)
 - Step-by-step assignment instructions
 - Validation checklists
 - Expected deliverables
-- Sprint-ready task format
+- Sprint-ready task format (0.5-1 story points)
+
+> **💡 Looking for solutions?** Complete solutions with production-ready scripts are available in [REAL-WORLD-TASKS-SOLUTIONS.md](./REAL-WORLD-TASKS-SOLUTIONS.md)
+
+---
+
+## 📑 Task Index
+
+Quick navigation to tasks and their solutions:
+
+| # | Task Name | Difficulty | Time | Story Points | Solution Link |
+|---|-----------|------------|------|--------------|---------------|
+| 2.1 | [Production Deployment Automation](#task-21-production-deployment-automation-script) | Medium | 3-4h | 0.5 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-21-production-deployment-automation-script) |
+| 2.2 | [Log Analysis and Alert Script](#task-22-log-analysis-and-alert-script) | Medium | 2-3h | 0.5 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-22-log-analysis-and-alert-script) |
+| 2.3 | [Automated Backup and Restore](#task-23-automated-backup-and-restore-script) | Medium | 3-4h | 0.5 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-23-automated-backup-and-restore-script) |
+| 2.4 | [Infrastructure Health Check](#task-24-infrastructure-health-check-script) | Medium | 3-4h | 0.5 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-24-infrastructure-health-check-script) |
+| 2.5 | [CI/CD Pipeline Helper Scripts](#task-25-cicd-pipeline-helper-scripts) | Hard | 4-5h | 1.0 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-25-cicd-pipeline-helper-scripts) |
+| 2.6 | [Multi-Environment Configuration Manager](#task-26-multi-environment-configuration-manager) | Medium | 2-3h | 0.5 | [View Solution →](./REAL-WORLD-TASKS-SOLUTIONS.md#task-26-multi-environment-configuration-manager) |
 
 ---
 
@@ -18,9 +37,9 @@ This document provides **real-world, executable Bash scripting tasks** designed 
 
 ### For Managers/Team Leads:
 1. Assign tasks based on engineer skill level and sprint capacity
-2. Use time estimates for sprint planning
+2. Use time estimates and story points for sprint planning
 3. Verify completion using validation checklists
-4. Review deliverables for code quality
+4. Review deliverables for code quality and security
 
 ### For DevOps Engineers:
 1. Read the scenario and understand business requirements
@@ -29,9 +48,18 @@ This document provides **real-world, executable Bash scripting tasks** designed 
 4. Test thoroughly using validation criteria
 5. Submit deliverables with documentation
 
+### For Self-Study:
+1. Start with easier tasks (2.2 or 2.6) to build confidence
+2. Try implementing without looking at solutions
+3. Use validation checklists to verify your work
+4. Compare your solution with the provided one
+5. Learn from differences in approach and best practices
+
 ---
 
 ## Task 2.1: Production Deployment Automation Script
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-21-production-deployment-automation-script)**
 
 ### 🎬 Real-World Scenario
 Your company deploys a microservices application to multiple environments (dev, staging, prod). Currently, deployments are done manually with inconsistent steps, leading to errors and downtime. You've been assigned to create a robust deployment automation script that the team can use for all environments.
@@ -149,6 +177,8 @@ Complete this checklist and submit as proof of completion:
 
 ## Task 2.2: Log Analysis and Alert Script
 
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-22-log-analysis-and-alert-script)**
+
 ### 🎬 Real-World Scenario
 Your production API generates massive log files daily. The operations team manually reviews logs each morning to identify errors, which is time-consuming and error-prone. You've been assigned to create an automated log analysis script that runs via cron and alerts the team of critical issues.
 
@@ -241,6 +271,8 @@ Create a Bash script that analyzes application logs, identifies patterns of conc
 ---
 
 ## Task 2.3: Automated Backup and Restore Script
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-23-automated-backup-and-restore-script)**
 
 ### 🎬 Real-World Scenario
 Your team manages multiple PostgreSQL databases for different microservices. Database backups are currently manual and inconsistent. You need to create an automated backup solution that runs nightly, maintains retention policies, and can quickly restore in emergencies.
@@ -338,6 +370,8 @@ Create a comprehensive database backup and restore automation script with retent
 ---
 
 ## Task 2.4: Infrastructure Health Check Script
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-24-infrastructure-health-check-script)**
 
 ### 🎬 Real-World Scenario
 Your infrastructure includes multiple components: web servers, API servers, databases, cache servers, and load balancers. Currently, there's no unified way to check the health of all components. You need to create a comprehensive health check script that the operations team can run before and after deployments.
@@ -449,6 +483,8 @@ Create a comprehensive health check script that validates all infrastructure com
 ---
 
 ## Task 2.5: CI/CD Pipeline Helper Scripts
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-25-cicd-pipeline-helper-scripts)**
 
 ### 🎬 Real-World Scenario
 Your team uses Jenkins for CI/CD but several manual steps are still required: image tagging, manifest updates, deployment rollback, and artifact cleanup. You've been tasked to create helper scripts that Jenkins can call to automate these operations.
@@ -574,6 +610,8 @@ Create a collection of modular Bash scripts that automate common CI/CD pipeline 
 ---
 
 ## Task 2.6: Multi-Environment Configuration Manager
+
+> **📖 [View Complete Solution](./REAL-WORLD-TASKS-SOLUTIONS.md#task-26-multi-environment-configuration-manager)**
 
 ### 🎬 Real-World Scenario
 Your application runs in dev, staging, and production with different configurations for each. Currently, configuration files are manually edited before deployment, leading to mistakes. You need to create a configuration management script that generates environment-specific configs from templates.
