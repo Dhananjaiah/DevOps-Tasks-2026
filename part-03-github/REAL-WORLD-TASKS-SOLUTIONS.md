@@ -1,6 +1,14 @@
 # GitHub Repository & Workflows Real-World Tasks - Complete Solutions
 
-This document provides **production-ready solutions** for all GitHub Repository & Workflows real-world tasks. Each solution includes complete implementations, configurations, and detailed explanations.
+> **📚 Navigation:** [← Back to Tasks](./REAL-WORLD-TASKS.md) | [Part 3 README](./README.md) | [Main README](../README.md)
+
+## 🎯 Overview
+
+This document provides **complete, production-ready solutions** for all 5 real-world GitHub Repository & Workflows tasks. Each solution includes step-by-step implementations, configuration files, and verification procedures.
+
+> **⚠️ Important:** Try to complete the tasks on your own before viewing the solutions! These are here to help you learn, verify your approach, or unblock yourself if you get stuck.
+
+> **📝 Need the task descriptions?** View the full task requirements in [REAL-WORLD-TASKS.md](./REAL-WORLD-TASKS.md)
 
 ---
 
@@ -9,338 +17,3140 @@ This document provides **production-ready solutions** for all GitHub Repository 
 1. [Task 3.1: Implement GitFlow Branching Strategy](#task-31-implement-gitflow-branching-strategy)
 2. [Task 3.2: Set Up Release Automation with Tags and Changelogs](#task-32-set-up-release-automation-with-tags-and-changelogs)
 3. [Task 3.3: Implement Code Review Process with CODEOWNERS](#task-33-implement-code-review-process-with-codeowners)
-4. [Task 3.4: Enable Security Features (Dependabot, Code Scanning)](#task-34-enable-security-features-(dependabot,-code-scanning))
+4. [Task 3.4: Enable Security Features (Dependabot, Code Scanning)](#task-34-enable-security-features-dependabot-code-scanning)
 5. [Task 3.5: Configure GitHub Environments for Deployment Control](#task-35-configure-github-environments-for-deployment-control)
 
 ---
 
 ## Task 3.1: Implement GitFlow Branching Strategy
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-31-implement-gitflow-branching-strategy)**
+
 ### Solution Overview
 
-This task requires implement gitflow branching strategy. Below is the complete implementation.
+Complete GitFlow branching strategy implementation with branch protection, PR templates, and documentation following industry best practices.
 
-### Complete Solution
-
-#### Implementation Steps
-
-**Step 1: Initial Setup**
+### Step 1: Set Up Branch Structure
 
 ```bash
-# Set up project structure
-mkdir -p project/{config,scripts,docs}
-cd project
+# Navigate to your repository
+cd your-repository
+
+# Ensure you're on main branch
+git checkout main
+git pull origin main
+
+# Create develop branch from main
+git checkout -b develop
+git push -u origin develop
+
+# Set develop as default branch for new branches
+git config branch.autosetupmerge always
+git config branch.autosetuprebase always
 ```
 
-**Step 2: Core Configuration**
+### Step 2: Configure Branch Protection Rules
 
-[Complete configuration files and code would be provided here in actual implementation]
+**For Main Branch:**
 
-**Step 3: Implementation**
+Go to GitHub Settings → Branches → Add Rule:
 
-[Detailed implementation steps would be provided here]
+```yaml
+Branch name pattern: main
+Protection settings:
+  ✅ Require a pull request before merging
+    ✅ Require approvals: 2
+    ✅ Dismiss stale pull request approvals when new commits are pushed
+    ✅ Require review from Code Owners
+  ✅ Require status checks to pass before merging
+    ✅ Require branches to be up to date before merging
+    - CI/CD Pipeline (add when available)
+    - Unit Tests (add when available)
+    - Code Quality Checks (add when available)
+  ✅ Require conversation resolution before merging
+  ✅ Require signed commits (recommended for security)
+  ✅ Require linear history
+  ✅ Do not allow bypassing the above settings
+  ✅ Restrict who can push to matching branches
+    - Add: DevOps team, Senior developers
+  ✅ Allow force pushes: NO
+  ✅ Allow deletions: NO
+```
 
-**Step 4: Testing and Validation**
+**For Develop Branch:**
+
+```yaml
+Branch name pattern: develop
+Protection settings:
+  ✅ Require a pull request before merging
+    ✅ Require approvals: 1
+    ✅ Dismiss stale pull request approvals when new commits are pushed
+  ✅ Require status checks to pass before merging
+    ✅ Require branches to be up to date before merging
+    - CI/CD Pipeline
+    - Unit Tests
+  ✅ Require conversation resolution before merging
+  ✅ Allow force pushes: NO
+  ✅ Allow deletions: NO
+```
+
+**For Release Branches:**
+
+```yaml
+Branch name pattern: release/*
+Protection settings:
+  ✅ Require a pull request before merging
+    ✅ Require approvals: 2
+    ✅ Require review from Code Owners
+  ✅ Require status checks to pass before merging
+  ✅ Require conversation resolution before merging
+  ✅ Allow force pushes: NO
+  ✅ Allow deletions: NO
+```
+
+**For Hotfix Branches:**
+
+```yaml
+Branch name pattern: hotfix/*
+Protection settings:
+  ✅ Require a pull request before merging
+    ✅ Require approvals: 1 (faster for emergencies)
+    ✅ Require review from Code Owners
+  ✅ Require status checks to pass before merging
+  ✅ Allow force pushes: NO
+```
+
+### Step 3: Create PR Templates
+
+Create `.github/PULL_REQUEST_TEMPLATE/` directory structure:
 
 ```bash
-# Test the implementation
-# [Specific test commands]
+mkdir -p .github/PULL_REQUEST_TEMPLATE
 ```
 
-### Configuration Files
+**Feature PR Template** (`.github/PULL_REQUEST_TEMPLATE/feature_pull_request_template.md`):
 
-[Configuration file examples would be provided here]
+```markdown
+## Feature Pull Request
+
+### 📝 Description
+<!-- Provide a clear and concise description of the feature -->
+
+### 🎯 Related Issue
+<!-- Link to the issue this PR addresses -->
+Closes #[issue_number]
+
+### 🔄 Type of Change
+- [ ] New feature
+- [ ] Enhancement to existing feature
+- [ ] Breaking change
+
+### 📸 Screenshots
+<!-- If applicable, add screenshots to help explain your feature -->
+
+### ✅ Checklist
+- [ ] My code follows the project's style guidelines
+- [ ] I have performed a self-review of my code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+- [ ] Any dependent changes have been merged and published
+
+### 🧪 Testing
+<!-- Describe the tests you ran and how to reproduce them -->
+
+### 📚 Documentation
+- [ ] README.md updated (if needed)
+- [ ] API documentation updated (if applicable)
+- [ ] User guide updated (if applicable)
+
+### 🔍 Review Focus Areas
+<!-- What should reviewers pay special attention to? -->
+```
+
+**Hotfix PR Template** (`.github/PULL_REQUEST_TEMPLATE/hotfix_pull_request_template.md`):
+
+```markdown
+## 🚨 Hotfix Pull Request
+
+### 🔥 Critical Issue
+<!-- Describe the critical issue being fixed -->
+
+### 🎯 Production Impact
+<!-- Describe the impact on production -->
+- **Severity**: [Critical/High/Medium]
+- **Users Affected**: [Number or percentage]
+- **Service Affected**: [Service name]
+
+### 🔧 Fix Description
+<!-- Explain what was fixed and how -->
+
+### 📋 Root Cause Analysis
+<!-- What caused this issue? -->
+
+### ✅ Pre-Deployment Checklist
+- [ ] Fix verified in staging environment
+- [ ] Rollback plan prepared
+- [ ] Stakeholders notified
+- [ ] Monitoring alerts configured
+- [ ] Documentation updated
+
+### 🧪 Testing Performed
+<!-- Describe testing done to verify the fix -->
+
+### 🚀 Deployment Plan
+1. Deploy to staging
+2. Verify fix in staging (15 minutes)
+3. Deploy to production
+4. Monitor for 1 hour
+
+### 📊 Monitoring
+<!-- What metrics/logs should be monitored after deployment? -->
+
+### 👥 Approvers Required
+- [ ] Tech Lead: @tech-lead
+- [ ] On-Call Engineer: @on-call
+```
+
+**Release PR Template** (`.github/PULL_REQUEST_TEMPLATE/release_pull_request_template.md`):
+
+```markdown
+## 🚀 Release Pull Request
+
+### 📦 Release Version
+v[MAJOR].[MINOR].[PATCH]
+
+### 📅 Release Date
+[YYYY-MM-DD]
+
+### 🎯 Release Type
+- [ ] Major Release (Breaking changes)
+- [ ] Minor Release (New features, backward compatible)
+- [ ] Patch Release (Bug fixes only)
+
+### 📝 Release Notes
+<!-- Summary of changes in this release -->
+
+#### ✨ New Features
+- Feature 1 (#PR_NUMBER)
+- Feature 2 (#PR_NUMBER)
+
+#### 🐛 Bug Fixes
+- Bug fix 1 (#PR_NUMBER)
+- Bug fix 2 (#PR_NUMBER)
+
+#### 💥 Breaking Changes
+- Breaking change 1 (#PR_NUMBER)
+- Migration guide: [link]
+
+#### 🔄 Improvements
+- Improvement 1 (#PR_NUMBER)
+
+### ✅ Pre-Release Checklist
+- [ ] All features tested in staging
+- [ ] Documentation updated
+- [ ] CHANGELOG.md updated
+- [ ] Version bumped in all files
+- [ ] Migration guide written (if breaking changes)
+- [ ] Dependencies updated
+- [ ] Security scan passed
+- [ ] Performance testing completed
+- [ ] Backup created
+
+### 🧪 Testing Summary
+<!-- Link to test results -->
+
+### 📚 Documentation
+- [ ] User guide updated
+- [ ] API docs updated
+- [ ] Release notes published
+
+### 🚀 Deployment Strategy
+- [ ] Blue-Green deployment
+- [ ] Canary deployment (10% → 50% → 100%)
+- [ ] Rolling deployment
+
+### 🔙 Rollback Plan
+<!-- Describe how to rollback if issues occur -->
+
+### 👥 Sign-off Required
+- [ ] Product Manager: @pm
+- [ ] Tech Lead: @tech-lead
+- [ ] QA Lead: @qa-lead
+- [ ] DevOps Lead: @devops-lead
+```
+
+### Step 4: Create CONTRIBUTING.md Documentation
+
+Create `.github/CONTRIBUTING.md`:
+
+```markdown
+# Contributing to [Project Name]
+
+## 🌿 GitFlow Branching Strategy
+
+We use GitFlow for managing our development workflow. Please follow these guidelines:
+
+### Branch Structure
+
+```
+main (production)
+  ├── develop (integration)
+  │   ├── feature/* (new features)
+  │   │   ├── feature/user-authentication
+  │   │   └── feature/payment-integration
+  │   └── bugfix/* (non-critical bugs)
+  ├── release/* (release preparation)
+  │   └── release/v1.2.0
+  └── hotfix/* (critical production fixes)
+      └── hotfix/security-patch
+```
+
+### Branch Naming Conventions
+
+- **Feature branches**: `feature/short-description` or `feature/TICKET-123-description`
+- **Bugfix branches**: `bugfix/short-description` or `bugfix/TICKET-456-description`
+- **Release branches**: `release/v1.2.0` (semantic versioning)
+- **Hotfix branches**: `hotfix/v1.2.1` or `hotfix/critical-issue-description`
+
+### Workflow
+
+#### 1. Starting a New Feature
+
+```bash
+# Update develop branch
+git checkout develop
+git pull origin develop
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Work on your feature
+git add .
+git commit -m "feat: add new feature"
+
+# Push to remote
+git push -u origin feature/your-feature-name
+
+# Create Pull Request to develop
+# Use Feature PR template
+```
+
+#### 2. Creating a Release
+
+```bash
+# Create release branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b release/v1.2.0
+
+# Bump version numbers in files
+# Update CHANGELOG.md
+# Final testing and bug fixes only
+
+# Create PR to main
+# Use Release PR template
+# Requires 2+ approvals
+
+# After merge, tag the release
+git checkout main
+git pull origin main
+git tag -a v1.2.0 -m "Release version 1.2.0"
+git push origin v1.2.0
+
+# Merge back to develop
+git checkout develop
+git merge main
+git push origin develop
+```
+
+#### 3. Emergency Hotfix
+
+```bash
+# Create hotfix from main
+git checkout main
+git pull origin main
+git checkout -b hotfix/v1.2.1
+
+# Fix the critical issue
+git add .
+git commit -m "fix: critical security issue"
+
+# Create PR to main
+# Use Hotfix PR template
+# Fast-track approval (1 approval minimum)
+
+# After merge, tag the hotfix
+git checkout main
+git pull origin main
+git tag -a v1.2.1 -m "Hotfix version 1.2.1"
+git push origin v1.2.1
+
+# Merge back to develop
+git checkout develop
+git merge main
+git push origin develop
+```
+
+### Commit Message Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation only
+- `style`: Code style changes (formatting, no logic change)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Examples:**
+```bash
+feat(auth): add OAuth2 integration
+fix(api): resolve null pointer in user endpoint
+docs(readme): update installation instructions
+```
+
+### Pull Request Process
+
+1. **Create PR** using appropriate template
+2. **Link related issues** using keywords (Closes #123)
+3. **Request reviews** from appropriate team members
+4. **Ensure CI passes** (tests, linting, security scans)
+5. **Address review comments**
+6. **Squash commits** if requested
+7. **Wait for approval** (varies by branch)
+8. **Merge** using "Squash and Merge" or "Rebase and Merge"
+
+### Code Review Guidelines
+
+**As a PR Author:**
+- Keep PRs small and focused
+- Write clear descriptions
+- Add tests for new features
+- Update documentation
+- Respond to feedback promptly
+
+**As a Reviewer:**
+- Review within 24 hours
+- Be constructive and respectful
+- Test the changes locally if needed
+- Check for security issues
+- Verify documentation updates
+
+### Branch Cleanup
+
+- Delete feature/bugfix branches after merging
+- Keep release and hotfix branches for reference
+- Archive branches older than 6 months
+
+## Questions?
+
+Contact the DevOps team: devops@company.com
+```
+
+### Step 5: Configure Automatic Branch Deletion
+
+Go to GitHub Settings → Options:
+
+```yaml
+Pull Requests:
+  ✅ Automatically delete head branches
+```
+
+### Step 6: Set Up Branch Protection Automation Script
+
+Create `.github/scripts/setup-branch-protection.sh`:
+
+```bash
+#!/bin/bash
+# Script to set up branch protection rules via GitHub API
+
+set -e
+
+REPO_OWNER="your-org"
+REPO_NAME="your-repo"
+GITHUB_TOKEN="${GITHUB_TOKEN}"
+
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "Error: GITHUB_TOKEN environment variable not set"
+    exit 1
+fi
+
+API_BASE="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}"
+
+# Function to set branch protection
+set_branch_protection() {
+    local branch=$1
+    local config_file=$2
+    
+    echo "Setting protection for branch: $branch"
+    
+    curl -X PUT \
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "${API_BASE}/branches/${branch}/protection" \
+        -d @"${config_file}"
+    
+    echo "✅ Protection set for $branch"
+}
+
+# Main branch protection
+cat > /tmp/main-protection.json <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["CI/CD Pipeline", "Unit Tests", "Code Quality"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismissal_restrictions": {},
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": true,
+    "required_approving_review_count": 2
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+
+set_branch_protection "main" "/tmp/main-protection.json"
+
+# Develop branch protection
+cat > /tmp/develop-protection.json <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["CI/CD Pipeline", "Unit Tests"]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+
+set_branch_protection "develop" "/tmp/develop-protection.json"
+
+echo "✅ All branch protections configured successfully!"
+```
+
+Make it executable:
+```bash
+chmod +x .github/scripts/setup-branch-protection.sh
+```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify setup
-# [Verification commands]
+# 1. Verify branches exist
+git branch -a | grep -E "(main|develop)"
 
-# 2. Test functionality
-# [Test commands]
+# 2. Check branch protection via GitHub UI
+# Navigate to: Settings → Branches → Branch protection rules
 
-# 3. Validate output
-# [Validation commands]
+# 3. Test feature branch workflow
+git checkout develop
+git pull origin develop
+git checkout -b feature/test-workflow
+echo "test" > test.txt
+git add test.txt
+git commit -m "feat: test workflow"
+git push -u origin feature/test-workflow
+# Create PR on GitHub and verify template loads
+
+# 4. Verify branch protection blocks direct push
+git checkout main
+echo "test" >> README.md
+git commit -am "direct commit test"
+git push origin main
+# Should fail with protection error
+
+# 5. Check automatic branch deletion works
+# Merge a PR and verify branch is deleted automatically
 ```
 
 ### Best Practices Implemented
 
-- ✅ Configure main, develop, release, hotfix, and feature branches
-- ✅ Set up branch protection rules
-- ✅ Create PR templates for each branch type
+- ✅ **Main Branch Protection**: 2 required approvals, signed commits, linear history
+- ✅ **Develop Branch Protection**: 1 required approval, status checks
+- ✅ **Release/Hotfix Protection**: Appropriate review requirements
+- ✅ **PR Templates**: Separate templates for feature, hotfix, and release PRs
+- ✅ **Clear Documentation**: Comprehensive CONTRIBUTING.md with workflows
+- ✅ **Commit Conventions**: Conventional Commits standard
+- ✅ **Automation**: Script for setting up branch protection via API
+- ✅ **Branch Cleanup**: Automatic deletion of merged branches
 
 ### Troubleshooting
 
-**Common Issue 1**: [Description]
-- Solution: [Solution steps]
+**Issue 1: Unable to Push to Protected Branch**
+```bash
+# Error: "Required status checks must pass"
+# Solution: Ensure all CI/CD checks are passing before creating PR
+git push origin feature/your-branch
+# Create PR and wait for checks to complete
+```
 
-**Common Issue 2**: [Description]
-- Solution: [Solution steps]
+**Issue 2: PR Template Not Loading**
+```bash
+# Solution: Template must be in .github/PULL_REQUEST_TEMPLATE/ directory
+# Check file naming and location
+ls -la .github/PULL_REQUEST_TEMPLATE/
+# Commit and push templates if missing
+git add .github/
+git commit -m "chore: add PR templates"
+git push origin develop
+```
+
+**Issue 3: Branch Protection API Fails**
+```bash
+# Solution: Check token permissions
+# Token needs: repo (full control of private repositories)
+# Generate new token at: Settings → Developer settings → Personal access tokens
+export GITHUB_TOKEN="your-token-here"
+.github/scripts/setup-branch-protection.sh
+```
+
+**Issue 4: Can't Delete Feature Branch**
+```bash
+# If automatic deletion doesn't work, manual cleanup:
+git branch -d feature/branch-name  # local
+git push origin --delete feature/branch-name  # remote
+```
 
 ---
 
 ## Task 3.2: Set Up Release Automation with Tags and Changelogs
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-32-set-up-release-automation-with-tags-and-changelogs)**
+
 ### Solution Overview
 
-This task requires set up release automation with tags and changelogs. Below is the complete implementation.
+Complete release automation setup with semantic versioning, automated tag creation, changelog generation, and GitHub releases using GitHub Actions and conventional commits.
 
-### Complete Solution
+### Step 1: Set Up Semantic Versioning Structure
 
-#### Implementation Steps
-
-**Step 1: Initial Setup**
+Create `.version` file in repository root:
 
 ```bash
-# Set up project structure
-mkdir -p project/{config,scripts,docs}
-cd project
+# Initialize version file
+echo "1.0.0" > .version
+git add .version
+git commit -m "chore: initialize version tracking"
+git push origin develop
 ```
 
-**Step 2: Core Configuration**
+### Step 2: Configure Conventional Commits
 
-[Complete configuration files and code would be provided here in actual implementation]
-
-**Step 3: Implementation**
-
-[Detailed implementation steps would be provided here]
-
-**Step 4: Testing and Validation**
+Install commitlint for local development:
 
 ```bash
-# Test the implementation
-# [Specific test commands]
+# Install commitlint
+npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+# Create commitlint config
+cat > .commitlintrc.json <<'EOF'
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "type-enum": [
+      2,
+      "always",
+      [
+        "feat",
+        "fix",
+        "docs",
+        "style",
+        "refactor",
+        "perf",
+        "test",
+        "build",
+        "ci",
+        "chore",
+        "revert"
+      ]
+    ],
+    "subject-case": [2, "never", ["upper-case"]],
+    "subject-empty": [2, "never"],
+    "subject-full-stop": [2, "never", "."],
+    "header-max-length": [2, "always", 72]
+  }
+}
+EOF
 ```
 
-### Configuration Files
+Add git hook with Husky:
 
-[Configuration file examples would be provided here]
+```bash
+# Install Husky
+npm install --save-dev husky
+
+# Initialize Husky
+npx husky install
+
+# Add commit-msg hook
+npx husky add .husky/commit-msg 'npx --no -- commitlint --edit ${1}'
+
+chmod +x .husky/commit-msg
+```
+
+### Step 3: Create Automated Release Workflow
+
+Create `.github/workflows/release.yml`:
+
+```yaml
+name: Release Automation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+        default: 'patch'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get all history for changelog
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Get current version
+        id: current_version
+        run: |
+          if [ -f .version ]; then
+            CURRENT_VERSION=$(cat .version)
+          else
+            CURRENT_VERSION="0.0.0"
+          fi
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+      
+      - name: Determine version bump
+        id: version_bump
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s")
+          
+          # Determine bump type based on conventional commits
+          BUMP_TYPE="patch"
+          
+          if echo "$COMMITS" | grep -q "^feat!:"; then
+            BUMP_TYPE="major"
+          elif echo "$COMMITS" | grep -q "BREAKING CHANGE"; then
+            BUMP_TYPE="major"
+          elif echo "$COMMITS" | grep -q "^feat:"; then
+            BUMP_TYPE="minor"
+          elif echo "$COMMITS" | grep -q "^fix:"; then
+            BUMP_TYPE="patch"
+          fi
+          
+          # Override with manual input if provided
+          if [ "${{ github.event.inputs.version_bump }}" != "" ]; then
+            BUMP_TYPE="${{ github.event.inputs.version_bump }}"
+          fi
+          
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP_TYPE"
+      
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          BUMP="${{ steps.version_bump.outputs.bump_type }}"
+          
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          
+          case $BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+      
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          # Initialize changelog
+          cat > CHANGELOG_NEW.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+EOF
+          
+          echo "## [${NEW_VERSION}] - $(date +%Y-%m-%d)" >> CHANGELOG_NEW.md
+          echo "" >> CHANGELOG_NEW.md
+          
+          # Get commits since last tag
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%h %s" --reverse)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%h %s" --reverse)
+          fi
+          
+          # Parse commits by type
+          FEATURES=$(echo "$COMMITS" | grep "^[a-f0-9]\+ feat:" | sed 's/^[a-f0-9]\+ feat: /- /' || true)
+          FIXES=$(echo "$COMMITS" | grep "^[a-f0-9]\+ fix:" | sed 's/^[a-f0-9]\+ fix: /- /' || true)
+          DOCS=$(echo "$COMMITS" | grep "^[a-f0-9]\+ docs:" | sed 's/^[a-f0-9]\+ docs: /- /' || true)
+          BREAKING=$(echo "$COMMITS" | grep -E "(^[a-f0-9]\+ feat!:|BREAKING CHANGE)" | sed 's/^[a-f0-9]\+ /- /' || true)
+          
+          # Add sections
+          if [ ! -z "$BREAKING" ]; then
+            echo "### 💥 BREAKING CHANGES" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+            echo "$BREAKING" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+          fi
+          
+          if [ ! -z "$FEATURES" ]; then
+            echo "### ✨ Features" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+            echo "$FEATURES" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+          fi
+          
+          if [ ! -z "$FIXES" ]; then
+            echo "### 🐛 Bug Fixes" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+            echo "$FIXES" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+          fi
+          
+          if [ ! -z "$DOCS" ]; then
+            echo "### 📚 Documentation" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+            echo "$DOCS" >> CHANGELOG_NEW.md
+            echo "" >> CHANGELOG_NEW.md
+          fi
+          
+          # Merge with existing changelog
+          if [ -f CHANGELOG.md ]; then
+            # Skip the header from new changelog
+            tail -n +6 CHANGELOG_NEW.md > TEMP_NEW.md
+            # Get header from existing changelog
+            head -n 5 CHANGELOG.md > TEMP_HEADER.md
+            # Combine: header + new changes + old changes (skip header)
+            cat TEMP_HEADER.md TEMP_NEW.md <(echo "") <(tail -n +6 CHANGELOG.md) > CHANGELOG.md
+            rm TEMP_NEW.md TEMP_HEADER.md
+          else
+            mv CHANGELOG_NEW.md CHANGELOG.md
+          fi
+          
+          rm -f CHANGELOG_NEW.md
+          
+          # Save release notes for GitHub release
+          if [ -z "$LAST_TAG" ]; then
+            RANGE_DESC="Initial release"
+          else
+            RANGE_DESC="Changes since ${LAST_TAG}"
+          fi
+          
+          {
+            echo "## What's Changed"
+            echo ""
+            echo "$RANGE_DESC"
+            echo ""
+            cat CHANGELOG.md | sed -n "/## \[${NEW_VERSION}\]/,/## \[/p" | sed '1d;$d'
+          } > RELEASE_NOTES.md
+          
+          echo "Changelog generated"
+      
+      - name: Update version in files
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          # Update .version file
+          echo "$NEW_VERSION" > .version
+          
+          # Update package.json if exists
+          if [ -f package.json ]; then
+            npm version $NEW_VERSION --no-git-tag-version --allow-same-version
+          fi
+          
+          # Update any other version files
+          # Add your specific version update commands here
+          
+          echo "Version updated in all files"
+      
+      - name: Commit changes
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .version CHANGELOG.md package.json package-lock.json 2>/dev/null || true
+          git commit -m "chore(release): v${NEW_VERSION}" || echo "No changes to commit"
+          git push origin main
+      
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
+          git push origin "v${NEW_VERSION}"
+          
+          echo "Tag v${NEW_VERSION} created and pushed"
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          release_name: Release v${{ steps.new_version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+      
+      - name: Merge back to develop
+        run: |
+          git fetch origin develop
+          git checkout develop
+          git merge main --no-edit
+          git push origin develop
+        continue-on-error: true  # Don't fail if develop doesn't exist
+```
+
+### Step 4: Create Manual Release Script
+
+Create `.github/scripts/create-release.sh`:
+
+```bash
+#!/bin/bash
+# Manual release creation script
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if on main branch
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    print_error "Must be on main branch to create release"
+    print_info "Current branch: $CURRENT_BRANCH"
+    exit 1
+fi
+
+# Get current version
+if [ -f .version ]; then
+    CURRENT_VERSION=$(cat .version)
+else
+    CURRENT_VERSION="0.0.0"
+fi
+
+print_info "Current version: $CURRENT_VERSION"
+
+# Ask for bump type
+echo ""
+echo "Select version bump type:"
+echo "  1) Major (Breaking changes)"
+echo "  2) Minor (New features)"
+echo "  3) Patch (Bug fixes)"
+echo -n "Enter choice [1-3]: "
+read CHOICE
+
+case $CHOICE in
+    1) BUMP_TYPE="major" ;;
+    2) BUMP_TYPE="minor" ;;
+    3) BUMP_TYPE="patch" ;;
+    *)
+        print_error "Invalid choice"
+        exit 1
+        ;;
+esac
+
+# Calculate new version
+IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+MAJOR="${VERSION_PARTS[0]}"
+MINOR="${VERSION_PARTS[1]}"
+PATCH="${VERSION_PARTS[2]}"
+
+case $BUMP_TYPE in
+    major)
+        MAJOR=$((MAJOR + 1))
+        MINOR=0
+        PATCH=0
+        ;;
+    minor)
+        MINOR=$((MINOR + 1))
+        PATCH=0
+        ;;
+    patch)
+        PATCH=$((PATCH + 1))
+        ;;
+esac
+
+NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+print_info "New version will be: $NEW_VERSION"
+
+# Confirm
+echo -n "Proceed with release v${NEW_VERSION}? [y/N]: "
+read CONFIRM
+
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    print_warning "Release cancelled"
+    exit 0
+fi
+
+# Update version file
+echo "$NEW_VERSION" > .version
+
+# Update package.json if exists
+if [ -f package.json ]; then
+    npm version $NEW_VERSION --no-git-tag-version --allow-same-version
+    print_info "Updated package.json"
+fi
+
+# Generate changelog entry
+print_info "Generating changelog..."
+
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+CHANGELOG_ENTRY="## [${NEW_VERSION}] - $(date +%Y-%m-%d)\n\n"
+
+if [ -z "$LAST_TAG" ]; then
+    COMMITS=$(git log --pretty=format:"%h %s")
+else
+    COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%h %s")
+fi
+
+# Add to CHANGELOG.md
+if [ ! -f CHANGELOG.md ]; then
+    cat > CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+EOF
+fi
+
+# Insert new entry after header
+sed -i "3i\\${CHANGELOG_ENTRY}" CHANGELOG.md
+
+# Commit changes
+git add .version CHANGELOG.md package.json package-lock.json 2>/dev/null || true
+git commit -m "chore(release): v${NEW_VERSION}"
+
+# Create and push tag
+git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
+
+print_info "Pushing changes and tag..."
+git push origin main
+git push origin "v${NEW_VERSION}"
+
+print_info "✅ Release v${NEW_VERSION} created successfully!"
+print_info "Create GitHub release at: https://github.com/YOUR_ORG/YOUR_REPO/releases/new?tag=v${NEW_VERSION}"
+```
+
+Make it executable:
+```bash
+chmod +x .github/scripts/create-release.sh
+```
+
+### Step 5: Set Up Release Notifications
+
+Create `.github/workflows/release-notification.yml`:
+
+```yaml
+name: Release Notifications
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    name: Send Release Notifications
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get release info
+        id: release_info
+        run: |
+          echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
+          echo "url=${{ github.event.release.html_url }}" >> $GITHUB_OUTPUT
+      
+      - name: Notify Slack
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 New Release Published!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 New Release: ${{ steps.release_info.outputs.tag }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release Name:* ${{ steps.release_info.outputs.name }}\n*Tag:* ${{ steps.release_info.outputs.tag }}\n*URL:* <${{ steps.release_info.outputs.url }}|View Release>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Comment on related issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = context.payload.release;
+            const tag = release.tag_name;
+            const body = release.body;
+            
+            // Extract issue numbers from release notes
+            const issueRegex = /#(\d+)/g;
+            const issues = [...body.matchAll(issueRegex)].map(match => parseInt(match[1]));
+            
+            for (const issue_number of issues) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                body: `🎉 This issue has been resolved in [${tag}](${release.html_url})`
+              });
+            }
+```
+
+### Step 6: Configure Release Branches
+
+Update `.github/workflows/release.yml` to handle release branches:
+
+Create `.github/workflows/prepare-release.yml`:
+
+```yaml
+name: Prepare Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.0)'
+        required: true
+
+jobs:
+  create_release_branch:
+    name: Create Release Branch
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      
+      - name: Create release branch
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git checkout -b "release/v${VERSION}"
+          
+          # Update version files
+          echo "$VERSION" > .version
+          
+          if [ -f package.json ]; then
+            npm version $VERSION --no-git-tag-version --allow-same-version
+          fi
+          
+          git add .version package.json package-lock.json 2>/dev/null || true
+          git commit -m "chore: prepare release v${VERSION}" || echo "No changes"
+          
+          git push origin "release/v${VERSION}"
+      
+      - name: Create PR to main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ github.event.inputs.version }}';
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release v${version}`,
+              head: `release/v${version}`,
+              base: 'main',
+              body: `## Release v${version}\n\nThis PR prepares the release v${version}.\n\n### Checklist\n- [ ] All tests passing\n- [ ] Documentation updated\n- [ ] CHANGELOG.md reviewed\n- [ ] Version bumped in all files\n- [ ] Release notes prepared`
+            });
+```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify setup
-# [Verification commands]
+# 1. Test conventional commits
+git add .
+git commit -m "feat: add new feature"  # Should pass
+git commit -m "invalid commit"  # Should fail with commitlint
 
-# 2. Test functionality
-# [Test commands]
+# 2. Create a test release (manual)
+.github/scripts/create-release.sh
 
-# 3. Validate output
-# [Validation commands]
+# 3. Verify tag was created
+git tag -l
+
+# 4. Check changelog was generated
+cat CHANGELOG.md
+
+# 5. Verify GitHub release
+# Go to: https://github.com/YOUR_ORG/YOUR_REPO/releases
+
+# 6. Test automated release workflow
+git push origin main
+# Check Actions tab for workflow run
+
+# 7. Test release branch workflow
+# Go to Actions → Prepare Release Branch → Run workflow
+# Enter version: 1.1.0
+# Verify PR is created
 ```
 
 ### Best Practices Implemented
 
-- ✅ Implement semantic versioning
-- ✅ Automate tag creation
-- ✅ Generate CHANGELOG.md automatically
+- ✅ **Semantic Versioning**: Proper major.minor.patch versioning
+- ✅ **Conventional Commits**: Enforced commit message format
+- ✅ **Automated Changelog**: Generated from commit history
+- ✅ **Automated Tagging**: Tags created automatically on release
+- ✅ **GitHub Releases**: Automated release creation with notes
+- ✅ **Release Branches**: Dedicated branches for release preparation
+- ✅ **Notifications**: Slack notifications and issue comments
+- ✅ **Version Management**: Centralized version tracking
+- ✅ **Manual Override**: Script for manual releases when needed
 
 ### Troubleshooting
 
-**Common Issue 1**: [Description]
-- Solution: [Solution steps]
+**Issue 1: Commitlint Not Working**
+```bash
+# Reinstall Husky hooks
+rm -rf .husky
+npx husky install
+npx husky add .husky/commit-msg 'npx --no -- commitlint --edit ${1}'
+chmod +x .husky/commit-msg
 
-**Common Issue 2**: [Description]
-- Solution: [Solution steps]
+# Test
+git commit -m "test: commitlint" --allow-empty
+```
+
+**Issue 2: Changelog Not Generating**
+```bash
+# Manually generate changelog
+LAST_TAG=$(git describe --tags --abbrev=0)
+git log ${LAST_TAG}..HEAD --pretty=format:"%s" | grep "^feat:\|^fix:"
+
+# Check if commits follow conventional format
+git log --oneline -10
+```
+
+**Issue 3: Tag Already Exists**
+```bash
+# Delete tag locally and remotely
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+
+# Recreate with correct version
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+**Issue 4: GitHub Actions Workflow Fails**
+```bash
+# Check workflow permissions
+# Settings → Actions → General → Workflow permissions
+# Ensure "Read and write permissions" is enabled
+
+# Check if GITHUB_TOKEN has proper scopes
+# For private repos, may need PAT with 'repo' scope
+```
 
 ---
 
 ## Task 3.3: Implement Code Review Process with CODEOWNERS
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-33-implement-code-review-process-with-codeowners)**
+
 ### Solution Overview
 
-This task requires implement code review process with codeowners. Below is the complete implementation.
+Complete code review process implementation with CODEOWNERS, automatic reviewer assignment, review guidelines, and SLA documentation.
 
-### Complete Solution
+### Step 1: Create CODEOWNERS File
 
-#### Implementation Steps
+Create `.github/CODEOWNERS`:
 
-**Step 1: Initial Setup**
+```
+# GitHub CODEOWNERS File
+# This file defines individuals or teams responsible for code in this repository.
+# Order is important; the last matching pattern takes precedence.
 
-```bash
-# Set up project structure
-mkdir -p project/{config,scripts,docs}
-cd project
+# Default owners for everything in the repo
+* @devops-team @tech-leads
+
+# Frontend code
+/frontend/** @frontend-team @ui-ux-leads
+/src/components/** @frontend-team
+/public/** @frontend-team
+
+# Backend code
+/backend/** @backend-team @api-leads
+/src/api/** @backend-team
+/src/services/** @backend-team
+/src/models/** @backend-team @database-team
+
+# Database and migrations
+/database/** @database-team @backend-team
+/migrations/** @database-team @dba
+*.sql @database-team
+
+# Infrastructure and DevOps
+/terraform/** @devops-team @infrastructure-leads
+/kubernetes/** @devops-team @platform-team
+/docker/** @devops-team
+/.github/workflows/** @devops-team @ci-cd-leads
+Dockerfile @devops-team
+docker-compose.yml @devops-team
+
+# CI/CD pipelines
+/.github/workflows/** @devops-team @ci-cd-leads
+/jenkins/** @devops-team
+/.circleci/** @devops-team
+
+# Configuration files
+/config/** @devops-team @backend-team
+*.env.example @devops-team @security-team
+*.yaml @devops-team
+*.yml @devops-team
+
+# Documentation
+/docs/** @technical-writers @tech-leads
+*.md @technical-writers
+README.md @tech-leads @product-team
+
+# Security-sensitive files
+/security/** @security-team @infosec-leads
+SECURITY.md @security-team
+/secrets/** @security-team @devops-team
+
+# Testing
+/tests/** @qa-team @backend-team @frontend-team
+*.test.js @qa-team @backend-team
+*.spec.js @qa-team @frontend-team
+/e2e/** @qa-team
+
+# Dependencies and package management
+package.json @devops-team @tech-leads
+package-lock.json @devops-team
+requirements.txt @backend-team @devops-team
+Gemfile @backend-team
+go.mod @backend-team
+go.sum @backend-team
+
+# Build and deployment
+/build/** @devops-team
+/dist/** @devops-team
+Makefile @devops-team
+/scripts/** @devops-team @backend-team
+
+# Specific critical files requiring senior review
+/src/auth/** @security-team @senior-backend-devs
+/src/payment/** @security-team @senior-backend-devs @compliance-team
+/src/billing/** @backend-team @finance-team @compliance-team
 ```
 
-**Step 2: Core Configuration**
+### Step 2: Create Code Review Guidelines
 
-[Complete configuration files and code would be provided here in actual implementation]
+Create `.github/CODE_REVIEW_GUIDELINES.md`:
 
-**Step 3: Implementation**
+```markdown
+# Code Review Guidelines
 
-[Detailed implementation steps would be provided here]
+## 🎯 Purpose
 
-**Step 4: Testing and Validation**
+Code reviews ensure code quality, knowledge sharing, and team collaboration. Every code change must be reviewed before merging.
 
-```bash
-# Test the implementation
-# [Specific test commands]
+## 👥 Reviewer Assignment
+
+### Automatic Assignment
+- CODEOWNERS automatically assigns reviewers based on file paths
+- GitHub assigns additional reviewers based on team load balancing
+
+### Manual Assignment
+- Assign specific reviewers for:
+  - Cross-functional changes
+  - Architectural decisions
+  - Performance-critical code
+  - Security-sensitive changes
+
+## ⏱️ Review SLAs
+
+| Priority | Response Time | Review Completion |
+|----------|--------------|-------------------|
+| **Critical** (Hotfix) | 30 minutes | 2 hours |
+| **High** (Production bug) | 4 hours | 1 business day |
+| **Medium** (Feature) | 1 business day | 2 business days |
+| **Low** (Docs, refactor) | 2 business days | 3 business days |
+
+## 📋 Review Checklist
+
+### As a PR Author
+
+**Before Creating PR:**
+- [ ] Code follows project style guidelines
+- [ ] All tests pass locally
+- [ ] No console.log or debug code
+- [ ] Comments explain "why", not "what"
+- [ ] Documentation updated
+- [ ] PR description is clear and complete
+- [ ] Linked related issues
+- [ ] Added appropriate labels
+
+**During Review:**
+- [ ] Respond to comments within 24 hours
+- [ ] Mark resolved conversations
+- [ ] Update PR based on feedback
+- [ ] Request re-review after significant changes
+- [ ] Be receptive to feedback
+
+### As a Reviewer
+
+**What to Review:**
+- [ ] **Functionality**: Does it work as intended?
+- [ ] **Tests**: Are there adequate tests?
+- [ ] **Security**: Any security vulnerabilities?
+- [ ] **Performance**: Any performance issues?
+- [ ] **Readability**: Is code easy to understand?
+- [ ] **Maintainability**: Is it easy to maintain?
+- [ ] **Documentation**: Is documentation adequate?
+- [ ] **Dependencies**: Are new dependencies justified?
+
+**Review Process:**
+1. **Understand Context** (5 min)
+   - Read PR description
+   - Check linked issues
+   - Understand business requirement
+
+2. **High-Level Review** (10 min)
+   - Check architecture and approach
+   - Verify design patterns
+   - Check for anti-patterns
+
+3. **Detailed Code Review** (20-30 min)
+   - Review each file systematically
+   - Check logic and edge cases
+   - Verify error handling
+   - Check test coverage
+
+4. **Provide Feedback** (10 min)
+   - Be specific and constructive
+   - Suggest improvements
+   - Approve or request changes
+   - Add inline comments for clarity
+
+## 💬 Comment Guidelines
+
+### Types of Comments
+
+**Required Changes (Blocking):**
+```
+❌ REQUIRED: This will cause a null pointer exception when user is not logged in.
 ```
 
-### Configuration Files
+**Suggestions (Non-blocking):**
+```
+💡 SUGGESTION: Consider using a Map instead of an array for O(1) lookups.
+```
 
-[Configuration file examples would be provided here]
+**Questions:**
+```
+❓ QUESTION: Why are we using setTimeout here? Is there a race condition?
+```
+
+**Praise:**
+```
+✨ NICE: Great use of the factory pattern here!
+```
+
+### Comment Best Practices
+
+**DO:**
+- ✅ Be specific: Point to exact line/code
+- ✅ Be constructive: Suggest solutions
+- ✅ Be respectful: Assume good intentions
+- ✅ Explain reasoning: Help others learn
+- ✅ Link to resources: Share documentation
+
+**DON'T:**
+- ❌ Be vague: "This doesn't look right"
+- ❌ Be condescending: "Everyone knows this"
+- ❌ Nitpick: Focus on auto-lintable issues
+- ❌ Debate in comments: Take offline if needed
+- ❌ Approve without reviewing: Actually review!
+
+## 🚫 Common Review Mistakes
+
+### Mistake 1: Rubber Stamping
+**Problem:** Approving without actually reviewing
+**Solution:** Take time to understand the code
+
+### Mistake 2: Over-Engineering
+**Problem:** Requiring perfect code in every PR
+**Solution:** Accept "good enough" if it improves codebase
+
+### Mistake 3: Bike Shedding
+**Problem:** Focusing on trivial details
+**Solution:** Focus on important issues first
+
+### Mistake 4: Blocking for Style
+**Problem:** Requesting changes for personal preferences
+**Solution:** Follow agreed style guide, use auto-formatting
+
+## 📊 Review Size Guidelines
+
+| Lines Changed | Ideal Review Time | Max PR Size |
+|---------------|-------------------|-------------|
+| < 50 | 10 minutes | Small PR ✅ |
+| 50-200 | 30 minutes | Medium PR ✅ |
+| 200-500 | 1 hour | Large PR ⚠️ |
+| > 500 | 2+ hours | Too Large ❌ |
+
+**Large PRs:** Should be split into smaller, focused PRs when possible.
+
+## 🎯 Approval Requirements
+
+### Feature PRs → Develop
+- **Minimum:** 1 approval
+- **Required:** Code owner approval
+- **Recommended:** 2 approvals
+
+### Release PRs → Main
+- **Minimum:** 2 approvals
+- **Required:** Tech lead approval
+- **Required:** QA sign-off
+
+### Hotfix PRs → Main
+- **Minimum:** 1 approval
+- **Required:** Senior engineer approval
+- **Required:** On-call approval
+
+## 🔄 Re-review Process
+
+**When to Request Re-review:**
+- Significant code changes
+- Addressing blocking comments
+- Adding new functionality
+- Changing approach/architecture
+
+**When Re-review Not Needed:**
+- Typo fixes
+- Comment updates
+- Minor refactoring
+- Formatting changes
+
+## 🏆 Review Quality Metrics
+
+We track these metrics to improve our review process:
+
+- **Response Time:** Time from PR creation to first review
+- **Review Completion Time:** Time from creation to approval
+- **Iteration Count:** Number of review rounds
+- **Defect Rate:** Issues found in production from reviewed code
+
+## 📚 Resources
+
+- [Google's Code Review Guidelines](https://google.github.io/eng-practices/review/)
+- [Effective Code Reviews](https://mtlynch.io/human-code-reviews-1/)
+- [Pull Request Best Practices](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests)
+
+## ❓ Questions?
+
+Contact @tech-leads or ask in #engineering-practices
+```
+
+### Step 3: Set Up Required Approvals
+
+Go to GitHub Settings → Branches → Edit branch protection:
+
+```yaml
+Branch: main
+Required reviews:
+  ✅ Require approvals: 2
+  ✅ Require review from Code Owners
+  
+Branch: develop
+Required reviews:
+  ✅ Require approvals: 1
+  ✅ Require review from Code Owners (for certain paths)
+```
+
+### Step 4: Configure Auto-Assignment
+
+Create `.github/auto_assign.yml`:
+
+```yaml
+# Auto-assignment configuration
+# Automatically assigns reviewers to PRs
+
+# Number of reviewers to assign
+addReviewers: 2
+
+# Number of assignees to assign
+addAssignees: 1
+
+# Reviewers to assign (in addition to CODEOWNERS)
+reviewers:
+  - backend-team
+  - frontend-team
+  - devops-team
+
+# Assignees for the PR
+assignees:
+  - tech-leads
+
+# Keywords to determine reviewer assignment
+reviewGroups:
+  backend:
+    - backend/**
+    - src/api/**
+    - src/services/**
+  frontend:
+    - frontend/**
+    - src/components/**
+    - public/**
+  devops:
+    - terraform/**
+    - kubernetes/**
+    - .github/workflows/**
+  security:
+    - src/auth/**
+    - src/payment/**
+    - security/**
+
+# Skip assignment for certain users
+skipKeywords:
+  - WIP
+  - DO NOT MERGE
+  - DRAFT
+```
+
+Install GitHub App: **Auto Assign** or create workflow:
+
+Create `.github/workflows/auto-assign.yml`:
+
+```yaml
+name: Auto Assign Reviewers
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  auto_assign:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Auto assign reviewers
+        uses: kentaro-m/auto-assign-action@v1.2.5
+        with:
+          configuration-path: '.github/auto_assign.yml'
+```
+
+### Step 5: Document Review SLAs
+
+Create `.github/REVIEW_SLA.md`:
+
+```markdown
+# Code Review Service Level Agreements (SLAs)
+
+## Response Time SLAs
+
+| PR Priority | First Response | Review Completion | Escalation After |
+|-------------|----------------|-------------------|------------------|
+| 🔴 **Critical** (Hotfix) | 30 minutes | 2 hours | 1 hour |
+| 🟠 **High** (Prod Bug) | 4 hours | 1 business day | 1 day |
+| 🟡 **Medium** (Feature) | 1 business day | 2 business days | 3 days |
+| 🟢 **Low** (Docs) | 2 business days | 3 business days | 5 days |
+
+## Business Hours
+
+- **Standard Hours:** 9 AM - 5 PM (Team timezone)
+- **On-Call Hours:** 24/7 for Critical/High priority
+- **Weekends:** On-call only for Critical issues
+
+## Escalation Process
+
+### Level 1: Assigned Reviewer (Default)
+- Primary code owner reviews PR
+- Follow standard SLA times
+
+### Level 2: Team Lead (SLA Breach)
+- If no response within SLA
+- Tag team lead: @team-lead
+- Notify in team channel
+
+### Level 3: Engineering Manager (Critical Delay)
+- If still no response after 2x SLA
+- Tag engineering manager: @eng-manager
+- Create incident if blocking release
+
+## Out of Office
+
+**When you're OOO:**
+1. Update GitHub status
+2. Set vacation responder
+3. Delegate review responsibilities
+4. Update on-call schedule
+
+## Metrics & Monitoring
+
+We track:
+- **Response Time**: Time to first review comment
+- **Completion Time**: Time to PR approval
+- **SLA Compliance**: % of PRs meeting SLA
+- **Reviewer Load**: PRs per reviewer per week
+
+View metrics: [Internal Dashboard Link]
+
+## Responsibilities
+
+**PR Author:**
+- Set appropriate priority label
+- Ping reviewers if SLA approaching
+- Provide context to speed up review
+
+**Reviewer:**
+- Check GitHub notifications regularly
+- Prioritize critical/high PRs
+- Communicate delays proactively
+
+**Team Lead:**
+- Monitor team SLA compliance
+- Balance reviewer workload
+- Remove blockers
+```
+
+### Step 6: Create Review Request Template
+
+Update `.github/PULL_REQUEST_TEMPLATE.md`:
+
+Add section for review guidance:
+
+```markdown
+## 🔍 Review Focus Areas
+
+<!-- Help reviewers by highlighting what to focus on -->
+
+**Critical Areas:**
+- [ ] Security: Authentication/authorization logic
+- [ ] Performance: Database queries, API calls
+- [ ] Business Logic: Payment processing, data calculations
+
+**What Changed:**
+- Technical approach used:
+- Affected systems:
+- Risk level: Low / Medium / High
+
+**Testing:**
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] Manual testing completed
+
+**Estimated Review Time:** ~30 minutes
+
+**Reviewers Needed:**
+- [ ] Backend engineer (for API changes)
+- [ ] Frontend engineer (for UI changes)
+- [ ] DevOps engineer (for infrastructure)
+- [ ] Security engineer (for security-sensitive code)
+```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify setup
-# [Verification commands]
+# 1. Test CODEOWNERS file
+# Go to GitHub and create a test PR touching different paths
+# Verify correct reviewers are auto-assigned
 
-# 2. Test functionality
-# [Test commands]
+# 2. Verify branch protection enforces code owners
+git checkout -b test-codeowners
+echo "test" >> README.md
+git add README.md
+git commit -m "test: codeowners"
+git push origin test-codeowners
+# Create PR, verify tech-leads are required reviewers
 
-# 3. Validate output
-# [Validation commands]
+# 3. Test review workflow
+# Create PR, add reviewers, test comment types
+# Verify approval requirements work
+
+# 4. Check auto-assignment works
+# Create new PR, wait 30 seconds
+# Verify reviewers automatically assigned
+
+# 5. Validate SLA documentation
+# Share REVIEW_SLA.md with team
+# Get feedback and adjust as needed
 ```
 
 ### Best Practices Implemented
 
-- ✅ Create CODEOWNERS file with team ownership
-- ✅ Configure automatic reviewer assignment
-- ✅ Create code review guidelines
+- ✅ **CODEOWNERS File**: Granular ownership by path
+- ✅ **Auto-Assignment**: Automatic reviewer assignment based on changes
+- ✅ **Clear Guidelines**: Comprehensive review documentation
+- ✅ **SLA Definition**: Clear response time expectations
+- ✅ **Review Templates**: Structured review requests
+- ✅ **Escalation Process**: Clear escalation paths
+- ✅ **Comment Standards**: Structured feedback types
+- ✅ **Metrics Tracking**: Review performance monitoring
 
 ### Troubleshooting
 
-**Common Issue 1**: [Description]
-- Solution: [Solution steps]
+**Issue 1: CODEOWNERS Not Working**
+```bash
+# File must be in one of these locations:
+# - .github/CODEOWNERS
+# - CODEOWNERS (root)
+# - docs/CODEOWNERS
 
-**Common Issue 2**: [Description]
-- Solution: [Solution steps]
+# Verify file location
+ls -la .github/CODEOWNERS
+
+# Check syntax - no extra spaces, valid GitHub handles
+# Test: Create PR and check "Reviewers" section
+```
+
+**Issue 2: Auto-Assignment Not Triggering**
+```bash
+# Verify workflow file exists and is valid
+cat .github/workflows/auto-assign.yml
+
+# Check workflow runs in Actions tab
+# Ensure auto_assign.yml config file exists
+cat .github/auto_assign.yml
+
+# Check GitHub App is installed (if using App approach)
+# Settings → Applications → Auto Assign
+```
+
+**Issue 3: Wrong Reviewers Assigned**
+```bash
+# CODEOWNERS uses last matching pattern
+# Move more specific patterns below general ones
+
+# Wrong order:
+* @team-a
+/frontend/** @team-b  # This will be overridden
+
+# Correct order:
+/frontend/** @team-b
+* @team-a  # This applies to everything else
+```
 
 ---
 
 ## Task 3.4: Enable Security Features (Dependabot, Code Scanning)
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-34-enable-security-features-dependabot-code-scanning)**
+
 ### Solution Overview
 
-This task requires enable security features (dependabot, code scanning). Below is the complete implementation.
+Complete security feature implementation including Dependabot for automated dependency updates, CodeQL for code scanning, secret scanning, and security policy documentation.
 
-### Complete Solution
+### Step 1: Enable and Configure Dependabot
 
-#### Implementation Steps
+Create `.github/dependabot.yml`:
 
-**Step 1: Initial Setup**
+```yaml
+version: 2
+updates:
+  # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "devops-team"
+      - "backend-team"
+    assignees:
+      - "tech-lead"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    milestone: 10
+    ignore:
+      # Ignore major version updates for stable dependencies
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "webpack"
+        update-types: ["version-update:semver-major"]
+    # Group updates for better management
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
 
-```bash
-# Set up project structure
-mkdir -p project/{config,scripts,docs}
-cd project
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "backend-team"
+    labels:
+      - "dependencies"
+      - "python"
+    versioning-strategy: increase
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "devops-team"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    reviewers:
+      - "devops-team"
+    labels:
+      - "dependencies"
+      - "ci-cd"
+    commit-message:
+      prefix: "ci"
+
+  # Terraform
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "devops-team"
+      - "infrastructure-team"
+    labels:
+      - "dependencies"
+      - "infrastructure"
+
+  # Go modules
+  - package-ecosystem: "gomod"
+    directory: "/services/api"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "backend-team"
+    labels:
+      - "dependencies"
+      - "golang"
 ```
 
-**Step 2: Core Configuration**
+### Step 2: Enable CodeQL Code Scanning
 
-[Complete configuration files and code would be provided here in actual implementation]
+Create `.github/workflows/codeql-analysis.yml`:
 
-**Step 3: Implementation**
+```yaml
+name: "CodeQL Security Scanning"
 
-[Detailed implementation steps would be provided here]
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run every Monday at 6 AM UTC
+    - cron: '0 6 * * 1'
 
-**Step 4: Testing and Validation**
+jobs:
+  analyze:
+    name: Analyze Code
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
-```bash
-# Test the implementation
-# [Specific test commands]
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'python', 'go' ]
+        # CodeQL supports: 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          # Override detected languages if needed
+          # queries: security-and-quality, security-extended
+          queries: +security-extended,security-and-quality
+          # Specify custom queries
+          # config-file: ./.github/codeql/codeql-config.yml
+
+      # Autobuild attempts to build code automatically
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+        # For compiled languages, you may need manual build steps:
+        # - name: Build
+        #   run: |
+        #     make bootstrap
+        #     make release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
+          # Upload results to Security tab
+          upload: true
+          # Fail the build on critical/high severity issues
+          # fail-on: critical,high
 ```
 
-### Configuration Files
+Create custom CodeQL configuration `.github/codeql/codeql-config.yml`:
 
-[Configuration file examples would be provided here]
+```yaml
+name: "Custom CodeQL Config"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+paths-ignore:
+  - 'node_modules/**'
+  - 'vendor/**'
+  - '**/test/**'
+  - '**/*_test.go'
+  - '**/*.test.js'
+  - 'dist/**'
+  - 'build/**'
+
+paths:
+  - 'src/**'
+  - 'backend/**'
+  - 'services/**'
+
+# Custom query packs
+packs:
+  javascript:
+    - codeql/javascript-queries
+    - codeql/javascript-all
+  python:
+    - codeql/python-queries
+  go:
+    - codeql/go-queries
+```
+
+### Step 3: Enable Secret Scanning
+
+Go to GitHub Settings:
+
+1. **Settings** → **Security & analysis**
+2. Enable **Secret scanning**
+3. Enable **Push protection** (prevents committing secrets)
+4. Configure **Custom patterns** if needed
+
+Create `.github/secret-scanning.yml` for custom patterns:
+
+```yaml
+# Custom patterns for secret scanning
+patterns:
+  - name: "Internal API Key"
+    pattern: 'internal_api_[a-zA-Z0-9]{32}'
+    
+  - name: "Database Connection String"
+    pattern: 'postgres://[a-zA-Z0-9]+:[a-zA-Z0-9]+@[a-zA-Z0-9.-]+:[0-9]+/[a-zA-Z0-9_]+'
+    
+  - name: "AWS Access Key"
+    pattern: 'AKIA[0-9A-Z]{16}'
+    
+  - name: "Private Key"
+    pattern: '-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----'
+```
+
+### Step 4: Create Security Policy
+
+Create `SECURITY.md`:
+
+```markdown
+# Security Policy
+
+## 🔒 Reporting a Vulnerability
+
+We take security seriously. If you discover a security vulnerability, please report it responsibly.
+
+### How to Report
+
+**DO NOT** create a public GitHub issue for security vulnerabilities.
+
+Instead, please report via:
+
+1. **GitHub Security Advisories** (Preferred)
+   - Go to: https://github.com/YOUR_ORG/YOUR_REPO/security/advisories/new
+   - Provide detailed information about the vulnerability
+
+2. **Email**
+   - Send to: security@company.com
+   - Use PGP key: [Link to public key]
+   - Include "SECURITY" in subject line
+
+### What to Include
+
+Please provide:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+- Your contact information
+
+### Response Timeline
+
+- **Acknowledgment**: Within 24 hours
+- **Initial Assessment**: Within 3 business days
+- **Status Update**: Weekly until resolved
+- **Resolution**: Varies by severity
+
+## 🛡️ Security Measures
+
+### Automated Security
+
+- **Dependabot**: Automated dependency updates
+- **CodeQL**: Static code analysis
+- **Secret Scanning**: Prevents credential leaks
+- **Branch Protection**: Enforced code review
+
+### Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 2.x.x   | ✅ Yes            |
+| 1.9.x   | ✅ Yes            |
+| 1.8.x   | ⚠️ Security fixes only |
+| < 1.8   | ❌ No             |
+
+### Security Updates
+
+- **Critical**: Patched within 24 hours
+- **High**: Patched within 1 week
+- **Medium**: Patched in next minor release
+- **Low**: Patched in next major release
+
+## 🎯 Security Best Practices
+
+### For Contributors
+
+1. **Never commit secrets** (use environment variables)
+2. **Keep dependencies updated**
+3. **Follow secure coding guidelines**
+4. **Enable 2FA** on GitHub account
+5. **Sign commits** with GPG key
+
+### For Users
+
+1. **Keep your installation updated**
+2. **Use strong passwords** for database/services
+3. **Enable HTTPS** for all deployments
+4. **Monitor security advisories**
+5. **Regular security audits**
+
+## 📚 Resources
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [GitHub Security Best Practices](https://docs.github.com/en/code-security)
+- [Secure Coding Guidelines](./docs/SECURE_CODING.md)
+
+## 🏆 Hall of Fame
+
+We thank security researchers who responsibly disclose vulnerabilities:
+
+- [Researcher Name] - [Vulnerability] - [Date]
+
+## ❓ Questions
+
+For general security questions: security@company.com
+For urgent issues: Call +1-XXX-XXX-XXXX (24/7 hotline)
+```
+
+### Step 5: Configure Security Workflows
+
+Create `.github/workflows/security-checks.yml`:
+
+```yaml
+name: Security Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run npm audit
+        if: hashFiles('package-lock.json') != ''
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --json > npm-audit.json || true
+      
+      - name: Run pip safety check
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          pip install safety
+          safety check --json --file=requirements.txt || true
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+
+  docker-scan:
+    name: Docker Image Security Scan
+    runs-on: ubuntu-latest
+    if: hashFiles('Dockerfile') != ''
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t test-image:latest .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'test-image:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+```
+
+### Step 6: Set Up Security Alerts Monitoring
+
+Create `.github/workflows/security-alerts.yml`:
+
+```yaml
+name: Security Alerts Monitor
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9 AM
+  workflow_dispatch:
+
+jobs:
+  check-alerts:
+    name: Check Security Alerts
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check Dependabot Alerts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const alerts = await github.rest.dependabot.listAlertsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            
+            if (alerts.data.length > 0) {
+              console.log(`Found ${alerts.data.length} open Dependabot alerts`);
+              
+              const critical = alerts.data.filter(a => a.security_advisory.severity === 'critical');
+              const high = alerts.data.filter(a => a.security_advisory.severity === 'high');
+              
+              if (critical.length > 0 || high.length > 0) {
+                core.setFailed(`CRITICAL: ${critical.length} critical, ${high.length} high severity alerts!`);
+              }
+            }
+      
+      - name: Send Slack Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚨 Security Alert: Critical/High severity vulnerabilities detected!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Repository:* ${{ github.repository }}\n*Action:* Review and fix security alerts immediately"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_SECURITY_WEBHOOK }}
+```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify setup
-# [Verification commands]
+# 1. Verify Dependabot configuration
+# Go to: Settings → Security & analysis → Dependabot
+# Check: "Dependabot alerts" and "Dependabot security updates" are enabled
 
-# 2. Test functionality
-# [Test commands]
+# 2. Test Dependabot (force check)
+# Go to: Insights → Dependency graph → Dependabot
+# Click "Check for updates" button
 
-# 3. Validate output
-# [Validation commands]
+# 3. Verify CodeQL is running
+# Go to: Actions tab
+# Look for "CodeQL" workflow runs
+# Or trigger manually: Actions → CodeQL → Run workflow
+
+# 4. Check CodeQL results
+# Go to: Security → Code scanning alerts
+# Should see CodeQL analysis results
+
+# 5. Test secret scanning
+echo "fake_secret_AKIA1234567890123456" > test-secret.txt
+git add test-secret.txt
+git commit -m "test: secret scanning"
+# Should be blocked by push protection
+
+# 6. Review security policy
+cat SECURITY.md
+# Share with team for review
+
+# 7. Monitor security dashboard
+# Go to: Security → Overview
+# View all security features status
 ```
 
 ### Best Practices Implemented
 
-- ✅ Enable Dependabot for dependency updates
-- ✅ Configure Dependabot security updates
-- ✅ Enable CodeQL code scanning
+- ✅ **Dependabot**: Automated dependency updates with smart grouping
+- ✅ **CodeQL Scanning**: Automated code security analysis
+- ✅ **Secret Scanning**: Prevents credential leaks with push protection
+- ✅ **Security Policy**: Clear vulnerability reporting process
+- ✅ **Multiple Ecosystems**: Coverage for npm, pip, Docker, Terraform, Go
+- ✅ **Custom Patterns**: Organization-specific secret patterns
+- ✅ **Security Workflows**: Additional automated security checks
+- ✅ **Alert Monitoring**: Proactive security alert tracking
+- ✅ **Notifications**: Slack integration for critical alerts
 
 ### Troubleshooting
 
-**Common Issue 1**: [Description]
-- Solution: [Solution steps]
+**Issue 1: Dependabot Not Creating PRs**
+```bash
+# Check Dependabot logs
+# Go to: Insights → Dependency graph → Dependabot
+# Click "Last checked" to see logs
 
-**Common Issue 2**: [Description]
-- Solution: [Solution steps]
+# Common causes:
+# 1. open-pull-requests-limit reached
+# 2. No updates available
+# 3. Version constraints too restrictive in package.json/requirements.txt
+
+# Force check:
+# Click "Check for updates" in Dependabot tab
+```
+
+**Issue 2: CodeQL Failing to Build**
+```bash
+# For compiled languages, may need custom build steps
+# Update .github/workflows/codeql-analysis.yml:
+
+- name: Build
+  run: |
+    # Add your build commands
+    npm run build
+    # or
+    make build
+    # or
+    go build ./...
+```
+
+**Issue 3: Too Many False Positives in CodeQL**
+```bash
+# Adjust severity level or use custom configuration
+# Edit .github/codeql/codeql-config.yml
+
+# Ignore specific paths or add suppressions
+paths-ignore:
+  - '**/test/**'
+  - 'docs/**'
+  - '**/*.test.js'
+```
+
+**Issue 4: Secret Scanning Blocking Valid Code**
+```bash
+# If you need to commit something that looks like a secret but isn't:
+# 1. Use a different format if possible
+# 2. Add to .gitattributes to exclude from scanning:
+echo "path/to/file linguist-generated=true" >> .gitattributes
+
+# Or request bypass (admin only):
+# During push, when blocked, click "Bypass protection"
+# Requires justification
+```
 
 ---
 
 ## Task 3.5: Configure GitHub Environments for Deployment Control
 
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-35-configure-github-environments-for-deployment-control)**
+
 ### Solution Overview
 
-This task requires configure github environments for deployment control. Below is the complete implementation.
+Complete GitHub Environments setup with protection rules, required reviewers, environment secrets management, deployment branches, and wait timers for controlled deployments across dev, staging, and production environments.
 
-### Complete Solution
+### Step 1: Create GitHub Environments via UI
 
-#### Implementation Steps
+**Note:** Environments must be created via GitHub UI (Settings → Environments). Below are the configurations for each environment.
 
-**Step 1: Initial Setup**
+#### Development Environment
 
-```bash
-# Set up project structure
-mkdir -p project/{config,scripts,docs}
-cd project
+1. Go to **Settings** → **Environments** → **New environment**
+2. Name: `development`
+3. Configure:
+
+```yaml
+Deployment branches:
+  ✅ All branches
+  
+Wait timer:
+  ⬜ Not configured (immediate deployment)
+  
+Required reviewers:
+  ⬜ Not required (auto-deploy)
+  
+Environment secrets:
+  - DEV_DATABASE_URL: postgres://dev-db.example.com:5432/devdb
+  - DEV_API_KEY: dev_key_xxxxx
+  - DEV_AWS_ROLE_ARN: arn:aws:iam::111111111111:role/dev-deployer
+  
+Environment variables:
+  - NODE_ENV: development
+  - LOG_LEVEL: debug
+  - DEPLOY_REGION: us-east-1
 ```
 
-**Step 2: Core Configuration**
+#### Staging Environment
 
-[Complete configuration files and code would be provided here in actual implementation]
+1. **Settings** → **Environments** → **New environment**
+2. Name: `staging`
+3. Configure:
 
-**Step 3: Implementation**
-
-[Detailed implementation steps would be provided here]
-
-**Step 4: Testing and Validation**
-
-```bash
-# Test the implementation
-# [Specific test commands]
+```yaml
+Deployment branches:
+  ✅ Selected branches
+  - develop
+  - release/*
+  
+Wait timer:
+  ✅ 5 minutes (allow time for health checks)
+  
+Required reviewers:
+  ✅ Required
+  Reviewers: @qa-lead, @tech-lead (1 required)
+  
+Environment secrets:
+  - STAGING_DATABASE_URL: postgres://staging-db.example.com:5432/stagingdb
+  - STAGING_API_KEY: staging_key_xxxxx
+  - STAGING_AWS_ROLE_ARN: arn:aws:iam::222222222222:role/staging-deployer
+  - DATADOG_API_KEY: xxxxx
+  
+Environment variables:
+  - NODE_ENV: staging
+  - LOG_LEVEL: info
+  - DEPLOY_REGION: us-east-1
+  - ENABLE_FEATURE_FLAGS: true
 ```
 
-### Configuration Files
+#### Production Environment
 
-[Configuration file examples would be provided here]
+1. **Settings** → **Environments** → **New environment**
+2. Name: `production`
+3. Configure:
+
+```yaml
+Deployment branches:
+  ✅ Protected branches only
+  - main
+  
+Wait timer:
+  ✅ 10 minutes (final safety check)
+  
+Required reviewers:
+  ✅ Required
+  Reviewers: @senior-engineer, @devops-lead, @tech-lead (2 required)
+  Prevent self-review: ✅ Yes
+  
+Environment secrets:
+  - PROD_DATABASE_URL: postgres://prod-db.example.com:5432/proddb
+  - PROD_API_KEY: prod_key_xxxxx
+  - PROD_AWS_ROLE_ARN: arn:aws:iam::333333333333:role/prod-deployer
+  - DATADOG_API_KEY: xxxxx
+  - SENTRY_DSN: https://xxxxx@sentry.io/xxxxx
+  - STRIPE_API_KEY: sk_live_xxxxx
+  
+Environment variables:
+  - NODE_ENV: production
+  - LOG_LEVEL: warn
+  - DEPLOY_REGION: us-east-1
+  - ENABLE_FEATURE_FLAGS: false
+  - CACHE_ENABLED: true
+```
+
+### Step 2: Create Deployment Workflows Using Environments
+
+Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  determine-environment:
+    name: Determine Deployment Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    
+    steps:
+      - name: Set environment based on branch
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  deploy-dev:
+    name: Deploy to Development
+    needs: [determine-environment, build]
+    if: needs.determine-environment.outputs.environment == 'development'
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.example.com
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+      
+      - name: Deploy to Development
+        run: |
+          echo "Deploying to Development..."
+          echo "Database: ${{ secrets.DEV_DATABASE_URL }}"
+          echo "Region: ${{ vars.DEPLOY_REGION }}"
+          # Add your deployment commands here
+          # aws s3 sync dist/ s3://dev-bucket/
+          # kubectl apply -f k8s/dev/
+      
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          curl -f https://dev.example.com/health || exit 1
+      
+      - name: Notify deployment
+        run: |
+          echo "✅ Successfully deployed to Development"
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [determine-environment, build]
+    if: needs.determine-environment.outputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.example.com
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+      
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to Staging..."
+          echo "Database: ${{ secrets.STAGING_DATABASE_URL }}"
+          echo "Region: ${{ vars.DEPLOY_REGION }}"
+          # Add your deployment commands here
+      
+      - name: Wait for deployment stabilization
+        run: sleep 30
+      
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          curl -f https://staging.example.com/health || exit 1
+      
+      - name: Notify QA team
+        run: |
+          echo "✅ Staging deployed - Ready for QA testing"
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: [determine-environment, build]
+    if: needs.determine-environment.outputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://example.com
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+      
+      - name: Pre-deployment checks
+        run: |
+          echo "Running pre-deployment checks..."
+          # Check if staging is healthy
+          # curl -f https://staging.example.com/health
+      
+      - name: Create deployment backup
+        run: |
+          echo "Creating backup..."
+          # aws s3 sync s3://prod-bucket/ s3://prod-backup-$(date +%Y%m%d%H%M%S)/
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to Production..."
+          echo "Database: ${{ secrets.PROD_DATABASE_URL }}"
+          echo "Region: ${{ vars.DEPLOY_REGION }}"
+          # Add your deployment commands here
+      
+      - name: Wait for deployment stabilization
+        run: sleep 60
+      
+      - name: Run health checks
+        run: |
+          echo "Running production health checks..."
+          curl -f https://example.com/health || exit 1
+          curl -f https://example.com/api/status || exit 1
+      
+      - name: Notify success
+        if: success()
+        run: |
+          echo "🚀 Successfully deployed to Production!"
+          # Send Slack/email notification
+      
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed - initiating rollback"
+          # Add rollback commands here
+```
+
+### Step 3: Create Environment-Specific Configuration Script
+
+Create `.github/scripts/setup-environments.sh`:
+
+```bash
+#!/bin/bash
+# Script to document environment setup
+# Note: Environments must be created via GitHub UI
+
+cat <<'EOF'
+# GitHub Environments Setup Guide
+
+## Step-by-Step Setup
+
+### 1. Create Development Environment
+
+1. Go to: Settings → Environments → New environment
+2. Name: development
+3. Configuration:
+   - Deployment branches: All branches
+   - Wait timer: None
+   - Required reviewers: None
+   
+4. Add Secrets:
+   - DEV_DATABASE_URL
+   - DEV_API_KEY
+   - DEV_AWS_ROLE_ARN
+
+5. Add Variables:
+   - NODE_ENV=development
+   - LOG_LEVEL=debug
+   - DEPLOY_REGION=us-east-1
+
+### 2. Create Staging Environment
+
+1. Go to: Settings → Environments → New environment
+2. Name: staging
+3. Configuration:
+   - Deployment branches: develop, release/*
+   - Wait timer: 5 minutes
+   - Required reviewers: @qa-lead, @tech-lead (1 required)
+   
+4. Add Secrets:
+   - STAGING_DATABASE_URL
+   - STAGING_API_KEY
+   - STAGING_AWS_ROLE_ARN
+
+5. Add Variables:
+   - NODE_ENV=staging
+   - LOG_LEVEL=info
+   - DEPLOY_REGION=us-east-1
+
+### 3. Create Production Environment
+
+1. Go to: Settings → Environments → New environment
+2. Name: production
+3. Configuration:
+   - Deployment branches: main (protected branches only)
+   - Wait timer: 10 minutes
+   - Required reviewers: @senior-engineer, @devops-lead (2 required)
+   - Prevent self-review: Yes
+   
+4. Add Secrets:
+   - PROD_DATABASE_URL
+   - PROD_API_KEY
+   - PROD_AWS_ROLE_ARN
+   - STRIPE_API_KEY
+   - SENTRY_DSN
+
+5. Add Variables:
+   - NODE_ENV=production
+   - LOG_LEVEL=warn
+   - DEPLOY_REGION=us-east-1
+
+EOF
+```
+
+Make executable:
+```bash
+chmod +x .github/scripts/setup-environments.sh
+```
+
+### Step 4: Create Environment Documentation
+
+Create `docs/DEPLOYMENT_ENVIRONMENTS.md`:
+
+```markdown
+# Deployment Environments
+
+## Overview
+
+We use three deployment environments with different protection levels:
+
+| Environment | Branch | Approval Required | Wait Timer | URL |
+|-------------|--------|-------------------|------------|-----|
+| **Development** | Any | No | None | https://dev.example.com |
+| **Staging** | develop, release/* | 1 (QA/Tech Lead) | 5 min | https://staging.example.com |
+| **Production** | main | 2 (Senior/DevOps Lead) | 10 min | https://example.com |
+
+## Deployment Process
+
+### To Development
+
+```bash
+# Automatic on any branch push
+git push origin feature/my-feature
+
+# Or manual trigger
+# Actions → Deploy Application → Run workflow → Select: development
+```
+
+### To Staging
+
+```bash
+# 1. Merge to develop
+git checkout develop
+git pull origin develop
+git merge feature/my-feature
+git push origin develop
+
+# 2. Wait for deployment workflow
+# 3. QA Lead or Tech Lead reviews and approves
+# 4. Wait 5 minutes (health check period)
+# 5. Deployment proceeds automatically
+```
+
+### To Production
+
+```bash
+# 1. Merge to main (via PR)
+git checkout main
+git pull origin main
+git merge develop
+git push origin main
+
+# 2. Wait for deployment workflow
+# 3. Two approvals required (Senior + DevOps Lead)
+# 4. Wait 10 minutes (final safety check)
+# 5. Deployment proceeds automatically
+# 6. Monitor production metrics
+```
+
+## Environment Variables
+
+### Development
+- `NODE_ENV`: development
+- `LOG_LEVEL`: debug
+- `DEPLOY_REGION`: us-east-1
+
+### Staging
+- `NODE_ENV`: staging
+- `LOG_LEVEL`: info
+- `DEPLOY_REGION`: us-east-1
+- `ENABLE_FEATURE_FLAGS`: true
+
+### Production
+- `NODE_ENV`: production
+- `LOG_LEVEL`: warn
+- `DEPLOY_REGION`: us-east-1
+- `ENABLE_FEATURE_FLAGS`: false
+- `CACHE_ENABLED`: true
+
+## Secrets Management
+
+**Never commit secrets to the repository!**
+
+### Adding Secrets
+
+1. Go to: Settings → Environments → [Environment Name]
+2. Click "Add secret"
+3. Enter name and value
+4. Click "Add secret"
+
+### Using Secrets in Workflows
+
+```yaml
+- name: Use secret
+  run: echo "Database: ${{ secrets.PROD_DATABASE_URL }}"
+  env:
+    API_KEY: ${{ secrets.PROD_API_KEY }}
+```
+
+## Troubleshooting
+
+### Deployment Stuck "Waiting"
+
+**Cause:** Missing approvals or wait timer
+**Solution:** 
+- Check required reviewers have approved
+- Wait for timer to complete
+- Check deployment history for details
+
+### Secret Not Found
+
+**Cause:** Secret not set for environment
+**Solution:**
+- Verify secret name matches exactly
+- Check secret is set in correct environment
+- Ensure environment name in workflow matches
+
+### Unauthorized Deployment
+
+**Cause:** Branch not allowed for environment
+**Solution:**
+- Check deployment branch rules
+- Ensure deploying from allowed branch
+- Update branch protection if needed
+
+## Monitoring
+
+### Deployment History
+
+View: `https://github.com/ORG/REPO/deployments`
+
+### Environment Status
+
+View: `https://github.com/ORG/REPO/environments`
+
+### Logs
+
+View: Actions → Deploy Application → Latest run
+```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify setup
-# [Verification commands]
+# 1. Verify environments exist
+# Go to: Settings → Environments
+# Should see: development, staging, production
 
-# 2. Test functionality
-# [Test commands]
+# 2. Test development deployment
+git checkout -b test-env-dev
+echo "test" >> README.md
+git add README.md
+git commit -m "test: dev deployment"
+git push origin test-env-dev
+# Check Actions tab - should deploy to dev automatically
 
-# 3. Validate output
-# [Validation commands]
+# 3. Test staging deployment with approval
+git checkout develop
+git merge test-env-dev
+git push origin develop
+# Check Actions tab - should require QA/Tech lead approval
+
+# 4. Test production deployment
+# Create PR from develop to main
+# Merge PR
+# Check Actions tab - should require 2 approvals + 10 min wait
+
+# 5. Verify environment secrets accessible
+# Check workflow logs (secrets should be masked)
+# Verify application can access secrets
+
+# 6. Test wait timers
+# Deploy to staging - should wait 5 minutes
+# Deploy to production - should wait 10 minutes
 ```
 
 ### Best Practices Implemented
 
-- ✅ Create dev, staging, and prod environments
-- ✅ Configure environment protection rules
-- ✅ Set up required reviewers for prod
+- ✅ **Three-Tier Environments**: Dev, Staging, Production with increasing protection
+- ✅ **Branch-Based Deployment**: Automatic environment selection based on branch
+- ✅ **Required Approvals**: 0 for dev, 1 for staging, 2 for production
+- ✅ **Wait Timers**: Safety delays before deployment (5 min staging, 10 min prod)
+- ✅ **Environment Secrets**: Isolated secrets per environment
+- ✅ **Environment Variables**: Environment-specific configuration
+- ✅ **Deployment Branches**: Restricted branches per environment
+- ✅ **Manual Triggers**: Ability to deploy to any environment manually
+- ✅ **Health Checks**: Post-deployment validation
+- ✅ **Comprehensive Documentation**: Clear deployment procedures
 
 ### Troubleshooting
 
-**Common Issue 1**: [Description]
-- Solution: [Solution steps]
+**Issue 1: Environment Not Appearing in Workflow**
+```bash
+# Ensure environment exists: Settings → Environments
+# Check workflow syntax uses correct environment name:
+environment:
+  name: production  # Must match exactly
+  url: https://example.com
+```
 
-**Common Issue 2**: [Description]
-- Solution: [Solution steps]
+**Issue 2: Deployment Not Requiring Approval**
+```bash
+# Verify reviewers are configured:
+# Settings → Environments → [Environment] → Required reviewers
+# Must have at least 1 reviewer for approval requirement
+
+# Check user has permission to approve:
+# User must have write or admin access to repository
+```
+
+**Issue 3: Cannot Access Environment Secrets**
+```bash
+# Verify secret exists in correct environment:
+# Settings → Environments → [Environment] → Secrets
+
+# Check workflow is using correct environment:
+environment:
+  name: production  # Must match environment name
+
+# Verify secret name in workflow matches exactly:
+${{ secrets.PROD_API_KEY }}  # Case-sensitive
+```
+
+**Issue 4: Wait Timer Not Working**
+```bash
+# Wait timer only applies after approval
+# If no approval required, deployment proceeds immediately
+# To add delay without approval, use workflow sleep:
+- name: Wait
+  run: sleep 300  # 5 minutes
+```
 
 ---
 
