@@ -1977,3 +1977,1345 @@ resource "aws_db_instance" "main" {
 
 ---
 
+## Task 6.3: Create Modular VPC Infrastructure
+
+### Goal / Why It's Important
+
+A well-designed **modular VPC** is the networking foundation for all AWS infrastructure. Creating reusable VPC modules:
+- Ensures consistent networking across environments
+- Simplifies multi-environment deployments
+- Reduces errors through standardization
+- Enables network isolation and security
+- Facilitates disaster recovery and multi-region deployments
+
+This is fundamental for any AWS infrastructure and a common DevOps interview topic.
+
+### Prerequisites
+
+- AWS account with VPC creation permissions
+- Terraform installed and configured
+- Understanding of AWS networking concepts
+- Knowledge of CIDR blocks and subnetting
+
+### Step-by-Step Implementation
+
+#### Step 1: Create VPC Module Structure
+
+```bash
+# Create module directory structure
+mkdir -p modules/vpc
+cd modules/vpc
+
+# Create module files
+touch main.tf variables.tf outputs.tf README.md
+```
+
+#### Step 2: Define VPC Module Variables
+
+```hcl
+# modules/vpc/variables.tf
+variable "vpc_name" {
+  description = "Name of the VPC"
+  type        = string
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for VPC"
+  type        = string
+  validation {
+    condition     = can(cidrhost(var.vpc_cidr, 0))
+    error_message = "Must be a valid IPv4 CIDR block address."
+  }
+}
+
+variable "azs" {
+  description = "Availability zones"
+  type        = list(string)
+}
+
+variable "private_subnets" {
+  description = "Private subnet CIDR blocks"
+  type        = list(string)
+}
+
+variable "public_subnets" {
+  description = "Public subnet CIDR blocks"
+  type        = list(string)
+}
+
+variable "database_subnets" {
+  description = "Database subnet CIDR blocks"
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_nat_gateway" {
+  description = "Enable NAT Gateway for private subnets"
+  type        = bool
+  default     = true
+}
+
+variable "single_nat_gateway" {
+  description = "Use single NAT Gateway for all private subnets"
+  type        = bool
+  default     = false
+}
+
+variable "enable_dns_hostnames" {
+  description = "Enable DNS hostnames in the VPC"
+  type        = bool
+  default     = true
+}
+
+variable "enable_dns_support" {
+  description = "Enable DNS support in the VPC"
+  type        = bool
+  default     = true
+}
+
+variable "enable_vpn_gateway" {
+  description = "Enable VPN gateway"
+  type        = bool
+  default     = false
+}
+
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
+}
+```
+
+#### Step 3: Implement VPC Module
+
+```hcl
+# modules/vpc/main.tf
+locals {
+  max_subnet_length = max(
+    length(var.private_subnets),
+    length(var.public_subnets),
+    length(var.database_subnets)
+  )
+  
+  nat_gateway_count = var.single_nat_gateway ? 1 : (
+    var.enable_nat_gateway ? local.max_subnet_length : 0
+  )
+}
+
+# VPC
+resource "aws_vpc" "this" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = var.enable_dns_hostnames
+  enable_dns_support   = var.enable_dns_support
+
+  tags = merge(
+    var.tags,
+    {
+      Name = var.vpc_name
+    }
+  )
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "this" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-igw"
+    }
+  )
+}
+
+# Public Subnets
+resource "aws_subnet" "public" {
+  count = length(var.public_subnets)
+
+  vpc_id                  = aws_vpc.this.id
+  cidr_block              = var.public_subnets[count.index]
+  availability_zone       = var.azs[count.index]
+  map_public_ip_on_launch = true
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-public-${var.azs[count.index]}"
+      Type = "public"
+    }
+  )
+}
+
+# Private Subnets
+resource "aws_subnet" "private" {
+  count = length(var.private_subnets)
+
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = var.private_subnets[count.index]
+  availability_zone = var.azs[count.index]
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-private-${var.azs[count.index]}"
+      Type = "private"
+    }
+  )
+}
+
+# Database Subnets
+resource "aws_subnet" "database" {
+  count = length(var.database_subnets)
+
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = var.database_subnets[count.index]
+  availability_zone = var.azs[count.index]
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-database-${var.azs[count.index]}"
+      Type = "database"
+    }
+  )
+}
+
+# Database Subnet Group
+resource "aws_db_subnet_group" "database" {
+  count = length(var.database_subnets) > 0 ? 1 : 0
+
+  name       = "${var.vpc_name}-database"
+  subnet_ids = aws_subnet.database[*].id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-database"
+    }
+  )
+}
+
+# Elastic IPs for NAT Gateways
+resource "aws_eip" "nat" {
+  count = local.nat_gateway_count
+
+  domain = "vpc"
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-nat-${count.index + 1}"
+    }
+  )
+
+  depends_on = [aws_internet_gateway.this]
+}
+
+# NAT Gateways
+resource "aws_nat_gateway" "this" {
+  count = local.nat_gateway_count
+
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-nat-${count.index + 1}"
+    }
+  )
+
+  depends_on = [aws_internet_gateway.this]
+}
+
+# Public Route Table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-public"
+    }
+  )
+}
+
+# Public Route to Internet Gateway
+resource "aws_route" "public_internet_gateway" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.this.id
+}
+
+# Public Route Table Association
+resource "aws_route_table_association" "public" {
+  count = length(var.public_subnets)
+
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# Private Route Tables
+resource "aws_route_table" "private" {
+  count = local.max_subnet_length
+
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-private-${count.index + 1}"
+    }
+  )
+}
+
+# Private Routes to NAT Gateway
+resource "aws_route" "private_nat_gateway" {
+  count = var.enable_nat_gateway ? local.max_subnet_length : 0
+
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = var.single_nat_gateway ? aws_nat_gateway.this[0].id : aws_nat_gateway.this[count.index].id
+}
+
+# Private Route Table Associations
+resource "aws_route_table_association" "private" {
+  count = length(var.private_subnets)
+
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
+
+# Database Route Table Associations
+resource "aws_route_table_association" "database" {
+  count = length(var.database_subnets)
+
+  subnet_id      = aws_subnet.database[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
+
+# VPN Gateway
+resource "aws_vpn_gateway" "this" {
+  count = var.enable_vpn_gateway ? 1 : 0
+
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-vpn-gw"
+    }
+  )
+}
+
+# VPC Flow Logs
+resource "aws_flow_log" "this" {
+  vpc_id          = aws_vpc.this.id
+  traffic_type    = "ALL"
+  iam_role_arn    = aws_iam_role.flow_logs.arn
+  log_destination = aws_cloudwatch_log_group.flow_logs.arn
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-flow-logs"
+    }
+  )
+}
+
+resource "aws_cloudwatch_log_group" "flow_logs" {
+  name              = "/aws/vpc/${var.vpc_name}"
+  retention_in_days = 30
+
+  tags = var.tags
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name = "${var.vpc_name}-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  name = "${var.vpc_name}-flow-logs-policy"
+  role = aws_iam_role.flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+```
+
+#### Step 4: Define Module Outputs
+
+```hcl
+# modules/vpc/outputs.tf
+output "vpc_id" {
+  description = "ID of the VPC"
+  value       = aws_vpc.this.id
+}
+
+output "vpc_cidr_block" {
+  description = "CIDR block of the VPC"
+  value       = aws_vpc.this.cidr_block
+}
+
+output "public_subnets" {
+  description = "List of public subnet IDs"
+  value       = aws_subnet.public[*].id
+}
+
+output "private_subnets" {
+  description = "List of private subnet IDs"
+  value       = aws_subnet.private[*].id
+}
+
+output "database_subnets" {
+  description = "List of database subnet IDs"
+  value       = aws_subnet.database[*].id
+}
+
+output "database_subnet_group_name" {
+  description = "Name of database subnet group"
+  value       = try(aws_db_subnet_group.database[0].name, "")
+}
+
+output "nat_gateway_ids" {
+  description = "List of NAT Gateway IDs"
+  value       = aws_nat_gateway.this[*].id
+}
+
+output "nat_gateway_public_ips" {
+  description = "List of NAT Gateway public IPs"
+  value       = aws_eip.nat[*].public_ip
+}
+
+output "internet_gateway_id" {
+  description = "ID of Internet Gateway"
+  value       = aws_internet_gateway.this.id
+}
+
+output "public_route_table_id" {
+  description = "ID of public route table"
+  value       = aws_route_table.public.id
+}
+
+output "private_route_table_ids" {
+  description = "List of private route table IDs"
+  value       = aws_route_table.private[*].id
+}
+```
+
+#### Step 5: Use the VPC Module
+
+```hcl
+# environments/dev/main.tf
+module "vpc" {
+  source = "../../modules/vpc"
+
+  vpc_name = "dev-vpc"
+  vpc_cidr = "10.0.0.0/16"
+
+  azs = ["us-east-1a", "us-east-1b", "us-east-1c"]
+
+  public_subnets   = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  private_subnets  = ["10.0.11.0/24", "10.0.12.0/24", "10.0.13.0/24"]
+  database_subnets = ["10.0.21.0/24", "10.0.22.0/24", "10.0.23.0/24"]
+
+  enable_nat_gateway = true
+  single_nat_gateway = false  # One NAT per AZ
+
+  tags = {
+    Environment = "dev"
+    Project     = "myapp"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Output VPC details
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+
+output "public_subnets" {
+  value = module.vpc.public_subnets
+}
+
+output "private_subnets" {
+  value = module.vpc.private_subnets
+}
+```
+
+### Key Commands Summary
+
+```bash
+# Initialize and plan
+terraform init
+terraform plan
+
+# Apply with auto-approve
+terraform apply -auto-approve
+
+# Show outputs
+terraform output
+terraform output -json
+
+# Destroy specific resource
+terraform destroy -target=module.vpc.aws_nat_gateway.this
+
+# Import existing VPC
+terraform import module.vpc.aws_vpc.this vpc-12345678
+
+# Show state
+terraform state list
+terraform state show module.vpc.aws_vpc.this
+
+# Refresh outputs
+terraform refresh
+```
+
+### Verification
+
+#### 1. Verify VPC Creation
+```bash
+# Get VPC ID
+VPC_ID=$(terraform output -raw vpc_id)
+
+# Describe VPC
+aws ec2 describe-vpcs --vpc-ids $VPC_ID
+
+# Check DNS settings
+aws ec2 describe-vpc-attribute --vpc-id $VPC_ID --attribute enableDnsHostnames
+aws ec2 describe-vpc-attribute --vpc-id $VPC_ID --attribute enableDnsSupport
+```
+
+#### 2. Verify Subnets
+```bash
+# List all subnets in VPC
+aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$VPC_ID" \
+  --query 'Subnets[*].[SubnetId,CidrBlock,AvailabilityZone,Tags[?Key==`Name`].Value|[0]]' \
+  --output table
+
+# Verify public subnets have public IPs enabled
+aws ec2 describe-subnets \
+  --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Type,Values=public" \
+  --query 'Subnets[*].[SubnetId,MapPublicIpOnLaunch]' \
+  --output table
+```
+
+#### 3. Verify NAT Gateways
+```bash
+# List NAT Gateways
+aws ec2 describe-nat-gateways \
+  --filter "Name=vpc-id,Values=$VPC_ID" \
+  --query 'NatGateways[*].[NatGatewayId,State,SubnetId,NatGatewayAddresses[0].PublicIp]' \
+  --output table
+```
+
+#### 4. Verify Route Tables
+```bash
+# List route tables
+aws ec2 describe-route-tables \
+  --filters "Name=vpc-id,Values=$VPC_ID" \
+  --query 'RouteTables[*].[RouteTableId,Tags[?Key==`Name`].Value|[0],Associations[0].SubnetId]' \
+  --output table
+
+# Check public routes
+aws ec2 describe-route-tables \
+  --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=*public*" \
+  --query 'RouteTables[*].Routes' \
+  --output table
+```
+
+### Common Mistakes & Troubleshooting
+
+#### Mistake 1: Overlapping CIDR Blocks
+
+**Problem**: Subnets overlap or exceed VPC CIDR
+
+**Solution**:
+```hcl
+# Use cidrsubnet function for automatic calculation
+locals {
+  vpc_cidr = "10.0.0.0/16"
+}
+
+# Automatically calculate subnet CIDRs
+public_subnets = [
+  cidrsubnet(local.vpc_cidr, 8, 1),  # 10.0.1.0/24
+  cidrsubnet(local.vpc_cidr, 8, 2),  # 10.0.2.0/24
+  cidrsubnet(local.vpc_cidr, 8, 3),  # 10.0.3.0/24
+]
+
+private_subnets = [
+  cidrsubnet(local.vpc_cidr, 8, 11), # 10.0.11.0/24
+  cidrsubnet(local.vpc_cidr, 8, 12), # 10.0.12.0/24
+  cidrsubnet(local.vpc_cidr, 8, 13), # 10.0.13.0/24
+]
+```
+
+#### Mistake 2: Too Many NAT Gateways (Cost)
+
+**Problem**: NAT Gateway costs add up ($0.045/hour per NAT * 3 AZs = $100/month)
+
+**Solution**:
+```hcl
+# For dev/staging, use single NAT Gateway
+module "vpc" {
+  source = "../../modules/vpc"
+  
+  enable_nat_gateway = true
+  single_nat_gateway = true  # Only one NAT for all AZs
+  
+  # For prod, use one NAT per AZ for HA
+  # single_nat_gateway = false
+}
+```
+
+#### Mistake 3: Insufficient IP Addresses
+
+**Problem**: Running out of IPs in subnets
+
+**Solution**:
+```hcl
+# Plan ahead for IP growth
+# /24 = 251 usable IPs (5 reserved by AWS)
+# /23 = 507 usable IPs
+# /22 = 1019 usable IPs
+
+# Example: EKS needs many IPs for pods
+private_subnets = [
+  "10.0.0.0/19",   # 8187 IPs per subnet
+  "10.0.32.0/19",
+  "10.0.64.0/19",
+]
+```
+
+### Interview Questions with Answers
+
+#### Q1: Why do we need both public and private subnets?
+
+**Answer**:
+**Public Subnets**:
+- Have route to Internet Gateway (0.0.0.0/0 → IGW)
+- Resources get public IPs
+- Direct internet access (inbound and outbound)
+- Use for: Load balancers, bastion hosts, NAT gateways
+
+**Private Subnets**:
+- Route to NAT Gateway for outbound traffic
+- No public IPs
+- No direct inbound internet access
+- Use for: Application servers, databases, backend services
+
+**Security Benefits**:
+- Defense in depth: Reduced attack surface
+- Private resources not directly accessible from internet
+- Controlled outbound access through NAT
+- Compliance requirements (PCI-DSS, HIPAA)
+
+**Example Architecture**:
+```
+Internet
+   ↓
+Internet Gateway
+   ↓
+Public Subnet (ALB)
+   ↓
+Private Subnet (EC2 App Servers)
+   ↓
+Private Subnet (RDS Database)
+```
+
+#### Q2: What is a NAT Gateway and why do we need it?
+
+**Answer**:
+**NAT Gateway** (Network Address Translation) allows resources in private subnets to access the internet while remaining private.
+
+**Purpose**:
+- Outbound internet access from private subnets
+- Download patches and updates
+- Access external APIs
+- Pull container images
+- Install packages
+
+**Without NAT Gateway**:
+- Private subnet resources cannot access internet
+- Cannot download updates
+- Cannot access AWS services via public endpoints (unless using VPC endpoints)
+
+**NAT Gateway vs NAT Instance**:
+| Feature | NAT Gateway | NAT Instance |
+|---------|-------------|--------------|
+| Managed | Fully managed by AWS | Self-managed EC2 |
+| Availability | HA within AZ | Single point of failure |
+| Bandwidth | Up to 100 Gbps | Depends on instance type |
+| Maintenance | None required | You manage |
+| Cost | $0.045/hour + data | EC2 cost + data |
+| Best for | Production | Cost optimization (dev) |
+
+**High Availability**:
+```hcl
+# One NAT Gateway per AZ for HA
+resource "aws_nat_gateway" "this" {
+  count = length(var.public_subnets)  # One per AZ
+  
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+}
+```
+
+#### Q3: Explain VPC CIDR planning best practices.
+
+**Answer**:
+**CIDR Planning Principles**:
+
+1. **Start with large enough CIDR**:
+```
+/16 = 65,536 IPs (recommended for production)
+/17 = 32,768 IPs
+/18 = 16,384 IPs
+/20 = 4,096 IPs (minimum for large deployments)
+```
+
+2. **Avoid overlap with**:
+- Other VPCs (if peering planned)
+- On-premises networks (if VPN/Direct Connect)
+- Common ranges (192.168.0.0/16, 172.16.0.0/12)
+
+3. **Reserve space for growth**:
+```hcl
+# Bad: Using entire /16
+vpc_cidr = "10.0.0.0/16"
+public_subnets = ["10.0.0.0/20", "10.0.16.0/20", ...]  # No room to grow
+
+# Good: Using only part of /16
+vpc_cidr = "10.0.0.0/16"
+public_subnets = ["10.0.0.0/24", "10.0.1.0/24", ...]  # Lots of room
+```
+
+4. **Subnet sizing by purpose**:
+```hcl
+# Small subnets for infrastructure
+public_subnets  = ["10.0.1.0/24", ...]   # ~250 IPs for ALB, NAT
+
+# Large subnets for workloads
+private_subnets = ["10.0.32.0/19", ...]  # ~8000 IPs for EKS pods
+
+# Small subnets for databases
+database_subnets = ["10.0.21.0/24", ...] # ~250 IPs sufficient
+```
+
+5. **AWS IP Reservations**:
+AWS reserves 5 IPs per subnet:
+- .0: Network address
+- .1: VPC router
+- .2: DNS server
+- .3: Reserved for future use
+- .255: Broadcast (not used in VPC but reserved)
+
+So /24 has 256 - 5 = 251 usable IPs
+
+**Planning Tool**:
+```bash
+# Calculate subnet details
+aws ec2 describe-subnets --subnet-ids subnet-12345 \
+  --query 'Subnets[0].[CidrBlock,AvailableIpAddressCount]'
+```
+
+---
+
+## Task 6.4: Provision Multi-Environment Infrastructure
+
+### Goal / Why It's Important
+
+Managing **multiple environments** (dev, staging, prod) efficiently is crucial for:
+- Consistent infrastructure across environments
+- Safe testing before production deployments
+- Cost optimization (smaller dev/staging environments)
+- Disaster recovery and blue/green deployments
+- Compliance and security isolation
+
+Proper environment management prevents configuration drift and reduces errors.
+
+### Prerequisites
+
+- Understanding of Terraform modules
+- AWS account with multi-environment strategy
+- Terraform workspaces or directory-based organization
+- CI/CD knowledge for automation
+
+### Step-by-Step Implementation
+
+#### Step 1: Choose Environment Strategy
+
+**Option A: Directory-Based** (Recommended for production):
+```
+terraform/
+├── modules/
+│   ├── vpc/
+│   ├── eks/
+│   └── rds/
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── terraform.tfvars
+│   │   └── backend.tf
+│   ├── staging/
+│   │   └── ...
+│   └── prod/
+│       └── ...
+└── shared/
+    └── ...
+```
+
+**Option B: Workspace-Based** (For simpler setups):
+```
+terraform/
+├── main.tf
+├── variables.tf
+└── terraform.tfvars
+# Use: terraform workspace select dev/staging/prod
+```
+
+#### Step 2: Create Environment-Specific Configurations
+
+```hcl
+# environments/dev/terraform.tfvars
+environment = "dev"
+aws_region  = "us-east-1"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+
+# EKS Configuration
+eks_cluster_version = "1.28"
+eks_node_groups = {
+  general = {
+    desired_size = 2
+    min_size     = 1
+    max_size     = 3
+    instance_types = ["t3.medium"]
+  }
+}
+
+# RDS Configuration
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+
+# Tags
+common_tags = {
+  Environment = "dev"
+  Project     = "myapp"
+  ManagedBy   = "Terraform"
+  CostCenter  = "engineering"
+}
+```
+
+```hcl
+# environments/prod/terraform.tfvars
+environment = "prod"
+aws_region  = "us-east-1"
+
+# VPC Configuration
+vpc_cidr = "10.100.0.0/16"
+
+# EKS Configuration
+eks_cluster_version = "1.28"
+eks_node_groups = {
+  general = {
+    desired_size = 6
+    min_size     = 3
+    max_size     = 10
+    instance_types = ["m5.xlarge"]
+  }
+  spot = {
+    desired_size = 3
+    min_size     = 0
+    max_size     = 10
+    instance_types = ["m5.large", "m5a.large"]
+    capacity_type  = "SPOT"
+  }
+}
+
+# RDS Configuration
+rds_instance_class    = "db.r5.xlarge"
+rds_allocated_storage = 500
+rds_multi_az          = true
+rds_backup_retention  = 30
+
+# Tags
+common_tags = {
+  Environment = "prod"
+  Project     = "myapp"
+  ManagedBy   = "Terraform"
+  CostCenter  = "engineering"
+}
+```
+
+#### Step 3: Create Main Configuration
+
+```hcl
+# environments/dev/main.tf
+terraform {
+  required_version = ">= 1.0"
+  
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  
+  backend "s3" {
+    bucket         = "mycompany-terraform-state"
+    key            = "dev/infrastructure.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-locks"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+  
+  default_tags {
+    tags = var.common_tags
+  }
+}
+
+# Data sources
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# VPC Module
+module "vpc" {
+  source = "../../modules/vpc"
+  
+  vpc_name = "${var.environment}-vpc"
+  vpc_cidr = var.vpc_cidr
+  
+  azs = slice(data.aws_availability_zones.available.names, 0, 3)
+  
+  public_subnets   = [for k, v in slice(data.aws_availability_zones.available.names, 0, 3) : cidrsubnet(var.vpc_cidr, 8, k)]
+  private_subnets  = [for k, v in slice(data.aws_availability_zones.available.names, 0, 3) : cidrsubnet(var.vpc_cidr, 8, k + 10)]
+  database_subnets = [for k, v in slice(data.aws_availability_zones.available.names, 0, 3) : cidrsubnet(var.vpc_cidr, 8, k + 20)]
+  
+  enable_nat_gateway = true
+  single_nat_gateway = var.environment != "prod"
+  
+  tags = var.common_tags
+}
+
+# EKS Module
+module "eks" {
+  source = "../../modules/eks"
+  
+  cluster_name    = "${var.environment}-eks-cluster"
+  cluster_version = var.eks_cluster_version
+  
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+  
+  node_groups = var.eks_node_groups
+  
+  tags = var.common_tags
+}
+
+# RDS Module
+module "rds" {
+  source = "../../modules/rds"
+  
+  identifier     = "${var.environment}-postgres"
+  engine         = "postgres"
+  engine_version = "15.3"
+  
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  multi_az          = var.environment == "prod"
+  
+  db_name  = "myapp"
+  username = "dbadmin"
+  password = data.aws_secretsmanager_secret_version.db_password.secret_string
+  
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.database_subnets
+  
+  backup_retention_period = var.environment == "prod" ? 30 : 7
+  
+  tags = var.common_tags
+}
+
+# Secrets
+data "aws_secretsmanager_secret_version" "db_password" {
+  secret_id = "${var.environment}/db/password"
+}
+```
+
+#### Step 4: Create Variables File
+
+```hcl
+# environments/dev/variables.tf
+variable "environment" {
+  description = "Environment name"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+}
+
+variable "eks_cluster_version" {
+  description = "EKS cluster version"
+  type        = string
+}
+
+variable "eks_node_groups" {
+  description = "EKS node group configurations"
+  type        = any
+}
+
+variable "rds_instance_class" {
+  description = "RDS instance class"
+  type        = string
+}
+
+variable "rds_allocated_storage" {
+  description = "RDS allocated storage in GB"
+  type        = number
+}
+
+variable "common_tags" {
+  description = "Common tags for all resources"
+  type        = map(string)
+}
+```
+
+#### Step 5: Create Deployment Scripts
+
+```bash
+# scripts/deploy.sh
+#!/bin/bash
+set -e
+
+ENVIRONMENT=$1
+
+if [ -z "$ENVIRONMENT" ]; then
+    echo "Usage: ./deploy.sh <environment>"
+    echo "Example: ./deploy.sh dev"
+    exit 1
+fi
+
+if [ ! -d "environments/$ENVIRONMENT" ]; then
+    echo "Environment $ENVIRONMENT not found"
+    exit 1
+fi
+
+cd "environments/$ENVIRONMENT"
+
+echo "Deploying to $ENVIRONMENT environment..."
+
+# Initialize
+terraform init
+
+# Validate
+terraform validate
+
+# Plan
+terraform plan -out=tfplan
+
+# Review and confirm
+echo ""
+echo "Please review the plan above."
+read -p "Do you want to apply these changes? (yes/no): " confirm
+
+if [ "$confirm" == "yes" ]; then
+    terraform apply tfplan
+    rm -f tfplan
+    echo "Deployment to $ENVIRONMENT complete!"
+else
+    echo "Deployment cancelled"
+    rm -f tfplan
+    exit 1
+fi
+```
+
+```bash
+# scripts/destroy.sh
+#!/bin/bash
+set -e
+
+ENVIRONMENT=$1
+
+if [ -z "$ENVIRONMENT" ]; then
+    echo "Usage: ./destroy.sh <environment>"
+    exit 1
+fi
+
+if [ "$ENVIRONMENT" == "prod" ]; then
+    echo "Cannot destroy production environment using this script!"
+    echo "If you really want to destroy prod, do it manually with proper approvals."
+    exit 1
+fi
+
+cd "environments/$ENVIRONMENT"
+
+echo "WARNING: This will destroy all resources in $ENVIRONMENT!"
+read -p "Type 'destroy-$ENVIRONMENT' to confirm: " confirm
+
+if [ "$confirm" == "destroy-$ENVIRONMENT" ]; then
+    terraform destroy -auto-approve
+    echo "Environment $ENVIRONMENT destroyed"
+else
+    echo "Destruction cancelled"
+    exit 1
+fi
+```
+
+Make scripts executable:
+```bash
+chmod +x scripts/*.sh
+```
+
+#### Step 6: Environment Promotion Workflow
+
+```bash
+# scripts/promote.sh
+#!/bin/bash
+set -e
+
+SOURCE_ENV=$1
+TARGET_ENV=$2
+
+if [ -z "$SOURCE_ENV" ] || [ -z "$TARGET_ENV" ]; then
+    echo "Usage: ./promote.sh <source-env> <target-env>"
+    echo "Example: ./promote.sh dev staging"
+    exit 1
+fi
+
+echo "Promoting configuration from $SOURCE_ENV to $TARGET_ENV"
+
+# Compare configurations
+echo "Differences between environments:"
+diff -u "environments/$SOURCE_ENV/main.tf" "environments/$TARGET_ENV/main.tf" || true
+
+# Update target environment
+read -p "Do you want to update $TARGET_ENV with $SOURCE_ENV configuration? (yes/no): " confirm
+
+if [ "$confirm" == "yes" ]; then
+    # Copy main.tf (keeping environment-specific tfvars)
+    cp "environments/$SOURCE_ENV/main.tf" "environments/$TARGET_ENV/main.tf"
+    
+    echo "Configuration promoted. Please review and update terraform.tfvars for $TARGET_ENV"
+    echo "Then run: ./deploy.sh $TARGET_ENV"
+else
+    echo "Promotion cancelled"
+fi
+```
+
+### Key Commands Summary
+
+```bash
+# Deploy to specific environment
+./scripts/deploy.sh dev
+./scripts/deploy.sh staging
+./scripts/deploy.sh prod
+
+# Compare environments
+diff -u environments/dev/terraform.tfvars environments/prod/terraform.tfvars
+
+# Check what would change in prod
+cd environments/prod
+terraform plan
+
+# Promote configuration
+./scripts/promote.sh dev staging
+
+# Destroy non-prod environment
+./scripts/destroy.sh dev
+
+# View state of specific environment
+cd environments/dev
+terraform state list
+terraform output
+
+# Compare states between environments
+terraform state pull > /tmp/dev-state.json  # In dev
+terraform state pull > /tmp/prod-state.json # In prod
+diff /tmp/dev-state.json /tmp/prod-state.json
+```
+
+### Verification
+
+#### 1. Verify Environment Isolation
+```bash
+# Check VPC CIDRs don't overlap
+aws ec2 describe-vpcs \
+  --filters "Name=tag:Environment,Values=dev,staging,prod" \
+  --query 'Vpcs[*].[Tags[?Key==`Environment`].Value|[0],CidrBlock]' \
+  --output table
+```
+
+#### 2. Compare Resource Counts
+```bash
+# Count resources per environment
+for env in dev staging prod; do
+  echo "Environment: $env"
+  cd environments/$env
+  terraform state list | wc -l
+  cd ../..
+done
+```
+
+#### 3. Verify Tags
+```bash
+# Check all resources have environment tags
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Environment,Values=dev \
+  --query 'ResourceTagMappingList[*].[ResourceARN]' \
+  --output table
+```
+
+### Common Mistakes & Troubleshooting
+
+#### Mistake 1: Shared State Between Environments
+
+**Problem**: All environments using same state file
+
+**Solution**:
+```hcl
+# Each environment MUST have separate state file
+# environments/dev/backend.tf
+terraform {
+  backend "s3" {
+    key = "dev/infrastructure.tfstate"  # Different key!
+  }
+}
+
+# environments/prod/backend.tf
+terraform {
+  backend "s3" {
+    key = "prod/infrastructure.tfstate"  # Different key!
+  }
+}
+```
+
+#### Mistake 2: Hardcoded Values
+
+**Problem**: Environment-specific values hardcoded in modules
+
+**Solution**:
+```hcl
+# Bad
+resource "aws_instance" "web" {
+  instance_type = "t3.large"  # Same for all environments
+}
+
+# Good
+resource "aws_instance" "web" {
+  instance_type = var.instance_type  # Configured per environment
+}
+```
+
+### Interview Questions with Answers
+
+#### Q1: What's the best way to manage multiple environments in Terraform?
+
+**Answer**:
+**Three main approaches**:
+
+1. **Separate Directories** (Best for production):
+```
+terraform/
+├── environments/
+│   ├── dev/
+│   ├── staging/
+│   └── prod/
+```
+
+**Pros**:
+- Complete isolation
+- Different backends per environment
+- Clear separation
+- Can have different module versions
+- Easy access control
+
+**Cons**:
+- Code duplication
+- More files to maintain
+
+2. **Workspaces** (Good for simple setups):
+```bash
+terraform workspace new dev
+terraform workspace new prod
+terraform workspace select dev
+```
+
+**Pros**:
+- Single codebase
+- Easy to switch
+- Less code duplication
+
+**Cons**:
+- Same backend (higher risk)
+- Harder access control
+- Easy to apply to wrong workspace
+- Not recommended for production
+
+3. **Terragrunt** (Advanced):
+```
+terragrunt/
+├── dev/
+│   └── terragrunt.hcl
+├── prod/
+│   └── terragrunt.hcl
+└── modules/
+```
+
+**Pros**:
+- DRY (Don't Repeat Yourself)
+- Centralized configuration
+- Dependency management
+
+**Cons**:
+- Additional tool
+- Learning curve
+- More complexity
+
+**Recommendation**: Use separate directories for production environments.
+
