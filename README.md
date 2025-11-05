@@ -4,6 +4,18 @@
 
 This repository contains a **comprehensive, practical, and exhaustive** set of DevOps tasks with full solutions designed for job aspirants preparing for real-world DevOps/SRE roles and technical interviews.
 
+## 🚀 NEW: Real-World Executable Tasks!
+
+We now offer **practical, time-bound tasks** you can execute immediately:
+
+- ✅ **18 Linux Tasks**: Production-ready scenarios with validation ([See REAL-WORLD-TASKS-GUIDE.md](./REAL-WORLD-TASKS-GUIDE.md))
+- ⏱️ **Time Estimates**: 45-90 minutes per task
+- 📋 **Validation Checklists**: Verify your work step-by-step
+- 📦 **Deliverables**: Scripts, configs, documentation templates
+- 🎯 **Success Criteria**: Clear definition of completion
+
+**Quick Start**: [Read the Real-World Tasks Guide](./REAL-WORLD-TASKS-GUIDE.md) → [Try Linux Tasks](./part-01-linux/REAL-WORLD-TASKS.md)
+
 ### Application Context
 
 All tasks are built around a **production-grade 3-tier web application**:
