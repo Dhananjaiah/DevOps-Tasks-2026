@@ -1,34 +1,22 @@
 # Part 5: AWS Cloud Foundation
 
-> **📚 Quick Links:** [Quick Start Guide](QUICK-START-GUIDE.md) | [Navigation Guide](NAVIGATION-GUIDE.md) | [Real-World Tasks](REAL-WORLD-TASKS.md) | [Complete Solutions](REAL-WORLD-TASKS-SOLUTIONS.md)
-
 ## Overview
 
 This section covers production-ready AWS infrastructure setup for deploying and managing our 3-tier web application (Frontend, Backend API, PostgreSQL) using AWS services.
 
 ## 📚 Available Resources
 
-### 🚀 Quick Start
-- **NEW!** [QUICK-START-GUIDE.md](QUICK-START-GUIDE.md) - Fast access to commands, learning paths, and task lookup
-- **NEW!** [NAVIGATION-GUIDE.md](NAVIGATION-GUIDE.md) - How to navigate AWS content efficiently
-
 ### Real-World Tasks
-- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - **18** practical, executable tasks with cloud scenarios (1,887 lines)
-- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - Complete AWS implementations with step-by-step commands
+- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 6 practical, executable tasks with cloud scenarios
+- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - Complete AWS implementations
 
 ### Comprehensive Task Coverage
-This README provides detailed implementations for all **18 AWS tasks** covering:
-- VPC design and multi-AZ networking
-- IAM roles, policies, and OIDC for EKS
-- EC2, RDS, S3, ECR, and container services
-- CloudWatch logs, metrics, and alerting
-- Lambda automation and EventBridge
-- VPC Peering and Transit Gateway
-- Secrets Manager and Parameter Store
-- CloudTrail audit logging
-- CloudFormation Infrastructure as Code
-- Cost optimization and tagging strategy
-- Security best practices throughout
+This README provides detailed implementations for all 16 AWS tasks covering:
+- VPC design and networking
+- IAM security and permissions
+- EC2, RDS, S3, and ECR
+- CloudWatch monitoring and alerting
+- Security best practices
 
 ---
 
