@@ -1,8 +1,52 @@
 # Part 2: Bash Scripting & Automation
 
+> **📚 Quick Links:** [Real-World Tasks](./REAL-WORLD-TASKS.md) | [Solutions](./REAL-WORLD-TASKS-SOLUTIONS.md) | [Quick Start Guide](./QUICK-START-GUIDE.md) | [Navigation Guide](./NAVIGATION-GUIDE.md) | [Main README](../README.md)
+
 ## Overview
 
 This section provides comprehensive Bash scripting tasks for automating DevOps workflows. All scripts are production-ready and follow best practices for our 3-tier application infrastructure.
+
+### 🎯 What You'll Find Here
+
+**📋 Real-World Tasks** ([View Tasks](./REAL-WORLD-TASKS.md))
+- 6 production-ready sprint tasks
+- Time estimates: 2-5 hours per task
+- Story points: 0.5-1.0 per task
+- Complete validation checklists
+- Full solutions available
+
+**📖 Learning Resources**
+- [Quick Start Guide](./QUICK-START-GUIDE.md) - Fast reference for all tasks
+- [Navigation Guide](./NAVIGATION-GUIDE.md) - Comprehensive navigation help
+- [Additional Tasks](./TASKS-2.3-2.14.md) - More practice exercises
+- This README - Comprehensive Bash tutorial (below)
+
+**🚀 Ready to Start?**
+1. Check the [Quick Start Guide](./QUICK-START-GUIDE.md) for task recommendations
+2. Pick a task from [Real-World Tasks](./REAL-WORLD-TASKS.md)
+3. Implement your solution
+4. Compare with [Solutions](./REAL-WORLD-TASKS-SOLUTIONS.md)
+
+---
+
+## 📑 Quick Task Reference
+
+| Task # | Name | Difficulty | Time | Story Points |
+|--------|------|------------|------|--------------|
+| 2.1 | Production Deployment Automation | Medium | 3-4h | 0.5 |
+| 2.2 | Log Analysis and Alert Script | Medium | 2-3h | 0.5 |
+| 2.3 | Automated Backup and Restore | Medium | 3-4h | 0.5 |
+| 2.4 | Infrastructure Health Check | Medium | 3-4h | 0.5 |
+| 2.5 | CI/CD Pipeline Helper Scripts | Hard | 4-5h | 1.0 |
+| 2.6 | Multi-Environment Configuration Manager | Medium | 2-3h | 0.5 |
+
+[View detailed task descriptions →](./REAL-WORLD-TASKS.md)
+
+---
+
+## Bash Scripting Tutorial
+
+This comprehensive tutorial covers essential Bash scripting concepts for DevOps automation.
 
 ---
 
