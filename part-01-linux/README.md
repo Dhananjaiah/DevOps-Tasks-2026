@@ -6,11 +6,17 @@ This section covers comprehensive Linux skills required for DevOps engineers man
 
 ## 📚 Available Resources
 
-- **[QUICK-START-GUIDE.md](QUICK-START-GUIDE.md)** - 🚀 **START HERE!** Quick reference with task lookup table and learning paths
-- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 18 practical, executable tasks with scenarios, requirements, and validation checklists for hands-on learning and assignments
-- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - ✨ **NEW!** Complete, production-ready solutions for all 18 real-world tasks with step-by-step commands, scripts, and configurations
+### Real-World Tasks (Recommended Starting Point)
+- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 📝 18 practical, executable tasks with scenarios, requirements, and validation checklists
+- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - ✅ Complete, production-ready solutions with step-by-step commands and scripts
+- **[NAVIGATION-GUIDE.md](NAVIGATION-GUIDE.md)** - 📚 **NEW!** Learn how to navigate between tasks and solutions efficiently
+
+### Quick Start & Additional Resources
+- **[QUICK-START-GUIDE.md](QUICK-START-GUIDE.md)** - 🚀 Quick reference with task lookup table and learning paths
 - **[TASKS-1.4-1.18.md](TASKS-1.4-1.18.md)** - Additional task implementations and examples
 - **[task-1.3-user-group-management.md](task-1.3-user-group-management.md)** - Detailed user and group management guide
+
+> **💡 New to real-world tasks?** Check out the [Navigation Guide](NAVIGATION-GUIDE.md) to understand how tasks and solutions are organized!
 
 ---
 

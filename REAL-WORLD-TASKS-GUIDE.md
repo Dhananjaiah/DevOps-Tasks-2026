@@ -7,7 +7,11 @@ This repository now includes **practical, executable real-world tasks** designed
 ## 📍 Where to Find Real-World Tasks
 
 ### Part 1: Linux Server Administration
-**Location**: [`part-01-linux/REAL-WORLD-TASKS.md`](./part-01-linux/REAL-WORLD-TASKS.md)
+
+**Task Questions**: [`part-01-linux/REAL-WORLD-TASKS.md`](./part-01-linux/REAL-WORLD-TASKS.md)  
+**Complete Solutions**: [`part-01-linux/REAL-WORLD-TASKS-SOLUTIONS.md`](./part-01-linux/REAL-WORLD-TASKS-SOLUTIONS.md)
+
+> **📚 Note:** Tasks and solutions are in separate files to encourage you to attempt the tasks before viewing solutions. Each file includes navigation links for easy switching between questions and answers.
 
 **18 comprehensive tasks covering:**
 - Server hardening and security
@@ -78,6 +82,42 @@ This repository now includes **practical, executable real-world tasks** designed
 - Success criteria
 - Test procedures
 ```
+
+## 📖 How to Navigate Tasks and Solutions
+
+Our real-world tasks are organized in a learner-friendly way:
+
+### File Structure
+```
+part-01-linux/
+├── REAL-WORLD-TASKS.md          ← Task questions & requirements
+└── REAL-WORLD-TASKS-SOLUTIONS.md ← Complete solutions
+```
+
+### Navigation Features
+
+**In REAL-WORLD-TASKS.md (Questions):**
+- 📑 Task index table at the top with direct links to each task AND its solution
+- 📖 "View Complete Solution" link at the start of each task
+- ✅ Complete task descriptions, requirements, and validation checklists
+
+**In REAL-WORLD-TASKS-SOLUTIONS.md (Answers):**
+- 📚 Table of contents linking to all solutions
+- 📋 "Back to Task Description" link at the start of each solution
+- ✅ Step-by-step implementation, scripts, and verification procedures
+
+### Recommended Workflow
+
+1. **Open the tasks file** ([REAL-WORLD-TASKS.md](./part-01-linux/REAL-WORLD-TASKS.md))
+2. **Choose a task** from the index based on your skill level
+3. **Attempt the task** on your own (don't peek at solutions!)
+4. **If stuck**, click the solution link to get unblocked
+5. **After completing**, compare your approach with the solution
+6. **Learn from differences** between your solution and the provided one
+
+> **💡 Pro Tip:** Keep both files open in separate tabs for easy reference!
+
+---
 
 ## 🔥 Quick Start: Try Your First Task
 
