@@ -3173,3 +3173,1088 @@ Cost allocation tags, resource tagging strategy, Cost Explorer, budgets and aler
 
 **Continue to [Part 6: Terraform Infrastructure as Code](../part-06-terraform/README.md) to learn how to automate all these AWS resources.**
 
+## Task 5.3: Security Groups and Network ACLs Configuration
+
+### Goal / Why It's Important
+
+Network security is defense in depth:
+- **Layered Security**: Security Groups + NACLs provide two firewall layers
+- **Isolation**: Control traffic between tiers (web, app, database)
+- **Least Privilege**: Only allow necessary traffic
+- **Compliance**: Meet regulatory network security requirements
+- **Attack Prevention**: Block unauthorized access attempts
+
+Critical for protecting resources in AWS.
+
+### Prerequisites
+
+- VPC created (Task 5.1)
+- Understanding of network protocols and ports
+- Knowledge of application architecture
+- AWS CLI configured
+
+### Step-by-Step Implementation
+
+#### Understanding Security Groups vs NACLs
+
+**Security Groups** (Stateful):
+- Instance-level firewall
+- Stateful (return traffic automatically allowed)
+- Only ALLOW rules (no explicit deny)
+- All rules evaluated before decision
+- Default: Deny all inbound, allow all outbound
+
+**Network ACLs** (Stateless):
+- Subnet-level firewall  
+- Stateless (must allow both request and response)
+- Both ALLOW and DENY rules
+- Rules processed in order (lowest number first)
+- Default: Allow all inbound and outbound
+
+#### Architecture for 3-Tier Application
+
+```
+Internet
+    ↓
+[ALB Security Group] - Allow 80,443 from 0.0.0.0/0
+    ↓
+[Web Tier SG] - Allow 80,443 from ALB SG
+    ↓
+[App Tier SG] - Allow 8080 from Web Tier SG
+    ↓
+[Database SG] - Allow 5432 from App Tier SG
+
+Public Subnet NACL:
+- Inbound: 80,443 from 0.0.0.0/0, ephemeral from 0.0.0.0/0
+- Outbound: All
+
+Private App Subnet NACL:
+- Inbound: 8080 from public subnet, ephemeral from 0.0.0.0/0
+- Outbound: All
+
+Private DB Subnet NACL:
+- Inbound: 5432 from app subnet
+- Outbound: Ephemeral to app subnet
+```
+
+#### Step 1: Create Security Group for Load Balancer
+
+```bash
+# Load Balancer Security Group
+ALB_SG=$(aws ec2 create-security-group \
+  --group-name alb-sg \
+  --description "Security group for Application Load Balancer" \
+  --vpc-id $VPC_ID \
+  --output text --query 'GroupId')
+
+echo "ALB Security Group: $ALB_SG"
+
+# Tag the security group
+aws ec2 create-tags \
+  --resources $ALB_SG \
+  --tags Key=Name,Value=alb-sg Key=Tier,Value=public
+
+# Allow HTTP from anywhere
+aws ec2 authorize-security-group-ingress \
+  --group-id $ALB_SG \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+
+# Allow HTTPS from anywhere
+aws ec2 authorize-security-group-ingress \
+  --group-id $ALB_SG \
+  --protocol tcp \
+  --port 443 \
+  --cidr 0.0.0.0/0
+
+# Verify rules
+aws ec2 describe-security-groups \
+  --group-ids $ALB_SG \
+  --query 'SecurityGroups[0].IpPermissions'
+```
+
+#### Step 2: Create Security Group for Web Tier
+
+```bash
+# Web Tier Security Group
+WEB_SG=$(aws ec2 create-security-group \
+  --group-name web-tier-sg \
+  --description "Security group for web tier instances" \
+  --vpc-id $VPC_ID \
+  --output text --query 'GroupId')
+
+echo "Web Tier Security Group: $WEB_SG"
+
+# Tag the security group
+aws ec2 create-tags \
+  --resources $WEB_SG \
+  --tags Key=Name,Value=web-tier-sg Key=Tier,Value=web
+
+# Allow HTTP from ALB only
+aws ec2 authorize-security-group-ingress \
+  --group-id $WEB_SG \
+  --protocol tcp \
+  --port 80 \
+  --source-group $ALB_SG
+
+# Allow HTTPS from ALB only
+aws ec2 authorize-security-group-ingress \
+  --group-id $WEB_SG \
+  --protocol tcp \
+  --port 443 \
+  --source-group $ALB_SG
+
+# Allow SSH from bastion (will create bastion SG later)
+# For now, allow from specific IP
+aws ec2 authorize-security-group-ingress \
+  --group-id $WEB_SG \
+  --protocol tcp \
+  --port 22 \
+  --cidr 10.0.1.0/24  # Bastion subnet CIDR
+```
+
+#### Step 3: Create Security Group for Application Tier
+
+```bash
+# Application Tier Security Group
+APP_SG=$(aws ec2 create-security-group \
+  --group-name app-tier-sg \
+  --description "Security group for application tier instances" \
+  --vpc-id $VPC_ID \
+  --output text --query 'GroupId')
+
+echo "Application Tier Security Group: $APP_SG"
+
+aws ec2 create-tags \
+  --resources $APP_SG \
+  --tags Key=Name,Value=app-tier-sg Key=Tier,Value=application
+
+# Allow application port from Web Tier only
+aws ec2 authorize-security-group-ingress \
+  --group-id $APP_SG \
+  --protocol tcp \
+  --port 8080 \
+  --source-group $WEB_SG
+
+# Allow SSH from bastion
+aws ec2 authorize-security-group-ingress \
+  --group-id $APP_SG \
+  --protocol tcp \
+  --port 22 \
+  --cidr 10.0.1.0/24
+
+# Allow all traffic from same security group (for internal communication)
+aws ec2 authorize-security-group-ingress \
+  --group-id $APP_SG \
+  --protocol -1 \
+  --source-group $APP_SG
+```
+
+#### Step 4: Create Security Group for Database Tier
+
+```bash
+# Database Tier Security Group
+DB_SG=$(aws ec2 create-security-group \
+  --group-name db-tier-sg \
+  --description "Security group for database tier" \
+  --vpc-id $VPC_ID \
+  --output text --query 'GroupId')
+
+echo "Database Security Group: $DB_SG"
+
+aws ec2 create-tags \
+  --resources $DB_SG \
+  --tags Key=Name,Value=db-tier-sg Key=Tier,Value=database
+
+# Allow PostgreSQL from Application Tier only
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG \
+  --protocol tcp \
+  --port 5432 \
+  --source-group $APP_SG
+
+# For RDS, also allow from bastion for admin access
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG \
+  --protocol tcp \
+  --port 5432 \
+  --cidr 10.0.1.0/24
+
+# Allow replication traffic within same SG (for RDS read replicas)
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG \
+  --protocol tcp \
+  --port 5432 \
+  --source-group $DB_SG
+```
+
+#### Step 5: Create Security Group for Bastion Host
+
+```bash
+# Bastion Host Security Group
+BASTION_SG=$(aws ec2 create-security-group \
+  --group-name bastion-sg \
+  --description "Security group for bastion host" \
+  --vpc-id $VPC_ID \
+  --output text --query 'GroupId')
+
+echo "Bastion Security Group: $BASTION_SG"
+
+aws ec2 create-tags \
+  --resources $BASTION_SG \
+  --tags Key=Name,Value=bastion-sg Key=Purpose,Value=bastion
+
+# Allow SSH from specific IPs only (your office, VPN, etc.)
+OFFICE_IP="203.0.113.0/24"  # Replace with your actual IP
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $BASTION_SG \
+  --protocol tcp \
+  --port 22 \
+  --cidr $OFFICE_IP
+
+# Best practice: Use Systems Manager Session Manager instead of SSH
+# No inbound rules needed if using SSM!
+```
+
+#### Step 6: Configure Network ACLs
+
+```bash
+# Get default NACL (we'll modify it for public subnet)
+PUBLIC_NACL=$(aws ec2 describe-network-acls \
+  --filters "Name=vpc-id,Values=$VPC_ID" "Name=default,Values=true" \
+  --query 'NetworkAcls[0].NetworkAclId' \
+  --output text)
+
+# Create custom NACL for private app subnet
+PRIVATE_APP_NACL=$(aws ec2 create-network-acl \
+  --vpc-id $VPC_ID \
+  --output text --query 'NetworkAcl.NetworkAclId')
+
+aws ec2 create-tags \
+  --resources $PRIVATE_APP_NACL \
+  --tags Key=Name,Value=private-app-nacl
+
+# Create custom NACL for private DB subnet
+PRIVATE_DB_NACL=$(aws ec2 create-network-acl \
+  --vpc-id $VPC_ID \
+  --output text --query 'NetworkAcl.NetworkAclId')
+
+aws ec2 create-tags \
+  --resources $PRIVATE_DB_NACL \
+  --tags Key=Name,Value=private-db-nacl
+
+# Public Subnet NACL Rules
+# Inbound
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PUBLIC_NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=80,To=80 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PUBLIC_NACL \
+  --rule-number 110 \
+  --protocol tcp \
+  --port-range From=443,To=443 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+# Allow ephemeral ports for return traffic
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PUBLIC_NACL \
+  --rule-number 120 \
+  --protocol tcp \
+  --port-range From=1024,To=65535 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+# Allow SSH from office IP
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PUBLIC_NACL \
+  --rule-number 130 \
+  --protocol tcp \
+  --port-range From=22,To=22 \
+  --cidr-block $OFFICE_IP \
+  --rule-action allow \
+  --ingress
+
+# Outbound (allow all)
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PUBLIC_NACL \
+  --rule-number 100 \
+  --protocol -1 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --egress
+
+# Private App Subnet NACL Rules
+# Inbound
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PRIVATE_APP_NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=8080,To=8080 \
+  --cidr-block 10.0.0.0/16 \
+  --rule-action allow \
+  --ingress
+
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PRIVATE_APP_NACL \
+  --rule-number 110 \
+  --protocol tcp \
+  --port-range From=22,To=22 \
+  --cidr-block 10.0.1.0/24 \
+  --rule-action allow \
+  --ingress
+
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PRIVATE_APP_NACL \
+  --rule-number 120 \
+  --protocol tcp \
+  --port-range From=1024,To=65535 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+# Outbound
+aws ec2 create-network-acl-entry \
+  --network-acl-id $PRIVATE_APP_NACL \
+  --rule-number 100 \
+  --protocol -1 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --egress
+
+# Associate NACLs with subnets
+aws ec2 replace-network-acl-association \
+  --association-id $(aws ec2 describe-network-acls \
+    --filters "Name=association.subnet-id,Values=$PRIVATE_APP_SUBNET_1A" \
+    --query 'NetworkAcls[0].Associations[0].NetworkAclAssociationId' \
+    --output text) \
+  --network-acl-id $PRIVATE_APP_NACL
+```
+
+#### Step 7: Implement Security Group Rules with Conditions
+
+```bash
+# Advanced: Security group with IP-based conditions
+# This requires combining with IAM policies
+
+# Security group with specific source/destination prefixes
+# Using prefix lists (managed by AWS)
+S3_PREFIX_LIST=$(aws ec2 describe-managed-prefix-lists \
+  --filters "Name=prefix-list-name,Values=com.amazonaws.us-east-1.s3" \
+  --query 'PrefixLists[0].PrefixListId' \
+  --output text)
+
+# Allow outbound to S3 via prefix list
+aws ec2 authorize-security-group-egress \
+  --group-id $APP_SG \
+  --ip-permissions IpProtocol=tcp,FromPort=443,ToPort=443,PrefixListIds=[{PrefixListId=$S3_PREFIX_LIST}]
+```
+
+### Key Commands Summary
+
+```bash
+# Security Groups
+aws ec2 create-security-group --group-name name --description "desc" --vpc-id vpc-xxx
+aws ec2 describe-security-groups --group-ids sg-xxx
+aws ec2 authorize-security-group-ingress --group-id sg-xxx --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id sg-xxx --protocol tcp --port 443 --source-group sg-yyy
+aws ec2 revoke-security-group-ingress --group-id sg-xxx --protocol tcp --port 22 --cidr 0.0.0.0/0
+aws ec2 delete-security-group --group-id sg-xxx
+
+# Network ACLs
+aws ec2 create-network-acl --vpc-id vpc-xxx
+aws ec2 describe-network-acls --network-acl-ids acl-xxx
+aws ec2 create-network-acl-entry --network-acl-id acl-xxx --rule-number 100 --protocol tcp --port-range From=80,To=80 --cidr-block 0.0.0.0/0 --rule-action allow --ingress
+aws ec2 delete-network-acl-entry --network-acl-id acl-xxx --rule-number 100 --ingress
+aws ec2 replace-network-acl-association --association-id aclassoc-xxx --network-acl-id acl-yyy
+
+# Testing
+aws ec2 describe-security-group-rules --filters "Name=group-id,Values=sg-xxx"
+```
+
+### Verification
+
+```bash
+# Verify security group rules
+aws ec2 describe-security-groups --group-ids $WEB_SG $APP_SG $DB_SG \
+  --query 'SecurityGroups[*].[GroupId,GroupName,IpPermissions[*].[IpProtocol,FromPort,ToPort,IpRanges[*].CidrIp,UserIdGroupPairs[*].GroupId]]' \
+  --output table
+
+# Test connectivity (from an EC2 instance)
+# Test web tier can reach app tier
+telnet app-instance-ip 8080
+
+# Test app tier can reach database
+telnet db-endpoint 5432
+
+# Test blocked connections (should timeout)
+telnet web-instance-ip 8080  # From internet (should fail)
+
+# Check NACL rules
+aws ec2 describe-network-acls --network-acl-ids $PRIVATE_APP_NACL \
+  --query 'NetworkAcls[0].Entries' \
+  --output table
+
+# Use VPC Reachability Analyzer
+aws ec2 create-network-insights-path \
+  --source i-source-instance \
+  --destination i-destination-instance \
+  --protocol tcp \
+  --destination-port 8080
+
+aws ec2 start-network-insights-analysis \
+  --network-insights-path-id nip-xxx
+
+# Check analysis results
+aws ec2 describe-network-insights-analyses \
+  --network-insights-analysis-ids nia-xxx
+```
+
+### Common Mistakes & Troubleshooting
+
+#### Mistake 1: Forgetting Return Traffic in NACLs
+
+**Problem**: NACLs are stateless - must allow both directions
+
+**Solution**:
+```bash
+# Bad: Only allow inbound 80
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=80,To=80 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+# Good: Also allow ephemeral ports outbound for return traffic
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=1024,To=65535 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --egress
+```
+
+#### Mistake 2: Circular Security Group Dependencies
+
+**Problem**: SG-A references SG-B, SG-B references SG-A (can cause issues)
+
+**Solution**:
+```bash
+# Create security groups first
+aws ec2 create-security-group --group-name sg-a --description "SG A" --vpc-id $VPC_ID
+aws ec2 create-security-group --group-name sg-b --description "SG B" --vpc-id $VPC_ID
+
+# Then add rules
+aws ec2 authorize-security-group-ingress --group-id $SG_A --source-group $SG_B --protocol tcp --port 8080
+aws ec2 authorize-security-group-ingress --group-id $SG_B --source-group $SG_A --protocol tcp --port 5432
+```
+
+#### Mistake 3: Too Permissive Rules
+
+**Problem**: Allowing 0.0.0.0/0 on sensitive ports
+
+**Solution**:
+```bash
+# Bad
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG \
+  --protocol tcp \
+  --port 5432 \
+  --cidr 0.0.0.0/0
+
+# Good: Only from application security group
+aws ec2 authorize-security-group-ingress \
+  --group-id $DB_SG \
+  --protocol tcp \
+  --port 5432 \
+  --source-group $APP_SG
+```
+
+#### Troubleshooting: Connection Issues
+
+```bash
+# Step 1: Check security group rules
+aws ec2 describe-security-groups --group-ids $SG_ID
+
+# Step 2: Check NACL rules
+aws ec2 describe-network-acls \
+  --filters "Name=association.subnet-id,Values=$SUBNET_ID"
+
+# Step 3: Check VPC Flow Logs
+aws ec2 describe-flow-logs --filter "Name=resource-id,Values=$ENI_ID"
+
+aws logs filter-log-events \
+  --log-group-name /aws/vpc/flowlogs \
+  --filter-pattern '[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action=REJECT, flowlogstatus]'
+
+# Step 4: Use VPC Reachability Analyzer
+aws ec2 create-network-insights-path \
+  --source i-xxx \
+  --destination i-yyy \
+  --protocol tcp \
+  --destination-port 8080
+
+# Step 5: Test from source instance
+telnet destination-ip port
+nc -zv destination-ip port
+curl -v http://destination-ip:port
+
+# Step 6: Check route tables
+aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$SUBNET_ID"
+```
+
+### Interview Questions with Answers
+
+#### Q1: What is the difference between Security Groups and Network ACLs?
+
+**Answer**:
+
+| Feature | Security Groups | Network ACLs |
+|---------|----------------|--------------|
+| **Level** | Instance (ENI) | Subnet |
+| **State** | Stateful | Stateless |
+| **Rules** | Allow only | Allow and Deny |
+| **Rule Processing** | All rules evaluated | Rules processed in order |
+| **Return Traffic** | Automatically allowed | Must explicitly allow |
+| **Default** | Deny all inbound, allow all outbound | Allow all |
+| **Rule Changes** | Applied immediately | Applied immediately |
+| **Association** | ENI/Instance | Subnet |
+
+**Stateful vs Stateless**:
+```
+Security Group (Stateful):
+- Allow inbound port 80
+- Return traffic automatically allowed
+- No explicit outbound rule needed for response
+
+NACL (Stateless):
+- Allow inbound port 80
+- Must also allow outbound ephemeral ports (1024-65535)
+- Must explicitly allow both directions
+```
+
+**When to Use Each**:
+- **Security Groups**: Primary defense, fine-grained control
+- **NACLs**: Additional layer, subnet-level rules, deny rules
+
+**Example**:
+```bash
+# Security Group: Allow SSH from specific IP
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG \
+  --protocol tcp \
+  --port 22 \
+  --cidr 203.0.113.5/32
+
+# Return traffic automatically allowed (stateful)
+
+# NACL: Must allow both directions
+# Inbound SSH
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=22,To=22 \
+  --cidr-block 203.0.113.5/32 \
+  --rule-action allow \
+  --ingress
+
+# Outbound ephemeral for return
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=1024,To=65535 \
+  --cidr-block 203.0.113.5/32 \
+  --rule-action allow \
+  --egress
+```
+
+#### Q2: How would you design security groups for a multi-tier application?
+
+**Answer**:
+
+**Architecture**:
+```
+Internet → ALB → Web Tier → App Tier → Database Tier
+```
+
+**Security Group Design**:
+
+**1. ALB Security Group**:
+```json
+Inbound:
+- Port 80 from 0.0.0.0/0 (HTTP)
+- Port 443 from 0.0.0.0/0 (HTTPS)
+
+Outbound:
+- Port 80 to Web-SG (forward to web tier)
+- Port 443 to Web-SG
+```
+
+**2. Web Tier Security Group**:
+```json
+Inbound:
+- Port 80 from ALB-SG
+- Port 443 from ALB-SG
+- Port 22 from Bastion-SG (admin access)
+
+Outbound:
+- Port 8080 to App-SG (API calls)
+- Port 443 to 0.0.0.0/0 (external API calls, updates)
+```
+
+**3. App Tier Security Group**:
+```json
+Inbound:
+- Port 8080 from Web-SG
+- Port 22 from Bastion-SG
+- All ports from same App-SG (inter-instance communication)
+
+Outbound:
+- Port 5432 to DB-SG (database queries)
+- Port 6379 to Cache-SG (Redis)
+- Port 443 to 0.0.0.0/0 (external APIs)
+```
+
+**4. Database Security Group**:
+```json
+Inbound:
+- Port 5432 from App-SG
+- Port 5432 from Bastion-SG (admin)
+- Port 5432 from same DB-SG (replication)
+
+Outbound:
+- Port 5432 to same DB-SG (replication)
+- Ephemeral ports to App-SG (return traffic)
+```
+
+**Best Practices**:
+1. **Principle of Least Privilege**: Only allow necessary traffic
+2. **Security Group Chaining**: Reference other security groups instead of CIDR
+3. **Bastion Host**: Single point of SSH access
+4. **No Direct Internet**: Private instances access internet via NAT Gateway
+5. **Logging**: Enable VPC Flow Logs for all subnets
+
+**Implementation**:
+```bash
+# Create all security groups first
+ALB_SG=$(aws ec2 create-security-group --group-name alb-sg --description "ALB" --vpc-id $VPC_ID --query 'GroupId' --output text)
+WEB_SG=$(aws ec2 create-security-group --group-name web-sg --description "Web" --vpc-id $VPC_ID --query 'GroupId' --output text)
+APP_SG=$(aws ec2 create-security-group --group-name app-sg --description "App" --vpc-id $VPC_ID --query 'GroupId' --output text)
+DB_SG=$(aws ec2 create-security-group --group-name db-sg --description "DB" --vpc-id $VPC_ID --query 'GroupId' --output text)
+
+# Configure rules (using security group references)
+aws ec2 authorize-security-group-ingress --group-id $WEB_SG --protocol tcp --port 80 --source-group $ALB_SG
+aws ec2 authorize-security-group-ingress --group-id $APP_SG --protocol tcp --port 8080 --source-group $WEB_SG
+aws ec2 authorize-security-group-ingress --group-id $DB_SG --protocol tcp --port 5432 --source-group $APP_SG
+```
+
+#### Q3: Explain ephemeral ports and why they matter for NACLs.
+
+**Answer**:
+
+**Ephemeral Ports** are temporary ports used by the OS for outbound connections.
+
+**Range**:
+- Linux: 32768-60999
+- Windows: 49152-65535
+- AWS Recommendation: 1024-65535 (to cover all)
+
+**Why They Matter**:
+
+NACLs are **stateless**, so return traffic uses ephemeral ports:
+
+```
+Client (External) → Server (AWS)
+Port 54321 → Port 80 (Request)
+Port 80 → Port 54321 (Response)
+
+For NACL:
+- Must allow inbound 80 (request)
+- Must allow outbound 54321 (response - ephemeral)
+```
+
+**Example Scenario**:
+```
+User accesses website on AWS:
+1. User browser uses ephemeral port 54321
+2. Connects to server port 80
+3. Server responds from port 80 to client ephemeral port 54321
+
+NACL Rules Needed:
+Inbound:
+- Allow port 80 from 0.0.0.0/0 (initial request)
+
+Outbound:
+- Allow ports 1024-65535 to 0.0.0.0/0 (response)
+```
+
+**Server Initiating Connection** (e.g., to external API):
+```
+Server initiates HTTPS to api.example.com:
+1. Server uses ephemeral port 45678
+2. Connects to external server port 443
+3. External server responds from port 443 to server ephemeral 45678
+
+NACL Rules Needed:
+Outbound:
+- Allow port 443 to 0.0.0.0/0 (initial request)
+
+Inbound:
+- Allow ports 1024-65535 from 0.0.0.0/0 (response)
+```
+
+**Best Practice**:
+```bash
+# Inbound: Specific ports for services
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=80,To=80 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --ingress
+
+# Outbound: Ephemeral range for return traffic
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 100 \
+  --protocol tcp \
+  --port-range From=1024,To=65535 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action allow \
+  --egress
+```
+
+**Security Consideration**:
+- Allowing ephemeral range 1024-65535 is necessary for NACLs
+- This is acceptable because:
+  - Security Groups provide stateful filtering
+  - NACLs are subnet-level (coarse-grained)
+  - Security Groups are instance-level (fine-grained)
+
+#### Q4: How do you troubleshoot connectivity issues between instances?
+
+**Answer**:
+
+**Systematic Troubleshooting Approach**:
+
+**Step 1: Verify Basic Connectivity**
+```bash
+# From source instance, test destination
+ping destination-ip
+telnet destination-ip destination-port
+nc -zv destination-ip destination-port
+
+# Check if port is listening on destination
+sudo netstat -tlnp | grep :8080
+sudo ss -tlnp | grep :8080
+```
+
+**Step 2: Check Security Group Rules**
+```bash
+# Get security group of destination instance
+aws ec2 describe-instances --instance-ids i-destination \
+  --query 'Reservations[0].Instances[0].SecurityGroups[*].GroupId' \
+  --output text
+
+# Check inbound rules
+aws ec2 describe-security-groups --group-ids sg-xxx \
+  --query 'SecurityGroups[0].IpPermissions'
+
+# Look for:
+# - Is the port allowed?
+# - Is source security group or CIDR allowed?
+# - Check protocol (TCP/UDP/ICMP)
+```
+
+**Step 3: Check Network ACLs**
+```bash
+# Get subnet of destination instance
+SUBNET=$(aws ec2 describe-instances --instance-ids i-destination \
+  --query 'Reservations[0].Instances[0].SubnetId' \
+  --output text)
+
+# Get NACL associated with subnet
+aws ec2 describe-network-acls \
+  --filters "Name=association.subnet-id,Values=$SUBNET" \
+  --query 'NetworkAcls[0].Entries'
+
+# Check:
+# - Inbound rules allow the port
+# - Outbound rules allow ephemeral ports
+# - Rules are in correct order (lower number = higher priority)
+# - No deny rule blocking traffic
+```
+
+**Step 4: Check Route Tables**
+```bash
+# Verify routing is correct
+aws ec2 describe-route-tables \
+  --filters "Name=association.subnet-id,Values=$SUBNET"
+
+# Ensure:
+# - Route exists to destination network
+# - NAT Gateway is available (if private subnet)
+# - Internet Gateway attached (if public subnet)
+```
+
+**Step 5: Review VPC Flow Logs**
+```bash
+# Check for rejected traffic
+aws logs filter-log-events \
+  --log-group-name /aws/vpc/flowlogs \
+  --filter-pattern '[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action=REJECT, flowlogstatus]' \
+  --start-time $(date -d '10 minutes ago' +%s)000 \
+  | jq '.events[].message'
+
+# Analyze the reject reason:
+# - Security group rejected: Check SG rules
+# - NACL rejected: Check NACL rules
+# - No route: Check route tables
+```
+
+**Step 6: Use VPC Reachability Analyzer**
+```bash
+# Create analysis
+aws ec2 create-network-insights-path \
+  --source i-source \
+  --destination i-destination \
+  --protocol tcp \
+  --destination-port 8080
+
+PATH_ID=$(aws ec2 describe-network-insights-paths --query 'NetworkInsightsPaths[0].NetworkInsightsPathId' --output text)
+
+# Run analysis
+aws ec2 start-network-insights-analysis \
+  --network-insights-path-id $PATH_ID
+
+# Get results
+aws ec2 describe-network-insights-analyses \
+  --network-insights-path-id $PATH_ID
+
+# Shows exact reason for connection failure:
+# - Security group blocking
+# - NACL blocking
+# - No route
+# - Blackhole
+```
+
+**Step 7: Check Application Layer**
+```bash
+# On destination instance
+# Check if application is running
+sudo systemctl status myapp
+
+# Check if application is listening
+sudo netstat -tlnp | grep :8080
+
+# Check application logs
+sudo journalctl -u myapp -n 100
+
+# Check firewall on instance
+sudo iptables -L -n
+sudo ufw status
+```
+
+**Common Issues and Solutions**:
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| Security group blocks | Connection timeout | Add allow rule in security group |
+| NACL blocks | Connection timeout | Add allow rule in NACL (both directions) |
+| Wrong port | Connection refused | Verify application listens on correct port |
+| Instance firewall | Connection timeout | Disable instance firewall or add rule |
+| No route | Destination unreachable | Add route in route table |
+| NAT Gateway down | Private instance can't reach internet | Check NAT Gateway status |
+
+**Quick Diagnostic Script**:
+```bash
+#!/bin/bash
+SRC_INSTANCE=$1
+DST_INSTANCE=$2
+DST_PORT=$3
+
+echo "=== Connectivity Diagnostic ==="
+
+# Get details
+SRC_SG=$(aws ec2 describe-instances --instance-ids $SRC_INSTANCE --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+DST_SG=$(aws ec2 describe-instances --instance-ids $DST_INSTANCE --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+
+echo "Source SG: $SRC_SG"
+echo "Destination SG: $DST_SG"
+
+# Check if destination allows traffic from source
+echo "Checking security group rules..."
+aws ec2 describe-security-groups --group-ids $DST_SG \
+  --query "SecurityGroups[0].IpPermissions[?contains(UserIdGroupPairs[].GroupId, '$SRC_SG') && (FromPort<=\`$DST_PORT\` && ToPort>=\`$DST_PORT\`)]"
+
+# Check VPC Flow Logs
+echo "Checking VPC Flow Logs for rejects..."
+aws logs filter-log-events \
+  --log-group-name /aws/vpc/flowlogs \
+  --filter-pattern "[version, account, eni, source, destination, srcport, destport=$DST_PORT, protocol, packets, bytes, windowstart, windowend, action=REJECT, flowlogstatus]" \
+  --start-time $(date -d '5 minutes ago' +%s)000 \
+  --max-items 5
+```
+
+#### Q5: When would you use Network ACLs vs just Security Groups?
+
+**Answer**:
+
+**Use Cases for Network ACLs**:
+
+**1. Deny Rules** (Primary reason)
+```bash
+# Block specific malicious IP at subnet level
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 1 \
+  --protocol -1 \
+  --cidr-block 203.0.113.50/32 \
+  --rule-action deny \
+  --ingress
+
+# Security groups can only allow, never deny
+# NACLs provide explicit deny capability
+```
+
+**2. Subnet-Level Protection**
+```
+Use Case: Block entire subnet from accessing another subnet
+
+Example: Prevent test subnet from accessing production database subnet
+
+NACL on prod DB subnet:
+- Deny all traffic from 10.0.100.0/24 (test subnet)
+```
+
+**3. Additional Layer (Defense in Depth)**
+```
+Security Model:
+Layer 1: NACL (Subnet level) - Coarse filtering
+Layer 2: Security Group (Instance level) - Fine-grained filtering
+Layer 3: Instance firewall - Application level
+
+Benefits:
+- Mistakes in security groups don't compromise subnet
+- Protection against misconfigured instances
+- Compliance requirements (multiple security layers)
+```
+
+**4. Stateless Filtering Required**
+```
+Use Case: Need to log both inbound and outbound separately
+
+NACLs provide stateless filtering:
+- See both directions in logs
+- Control each direction independently
+- Useful for compliance/audit requirements
+```
+
+**5. Temporary Security Measures**
+```bash
+# Quickly block traffic during incident
+aws ec2 create-network-acl-entry \
+  --network-acl-id $NACL \
+  --rule-number 1 \
+  --protocol -1 \
+  --cidr-block 0.0.0.0/0 \
+  --rule-action deny \
+  --ingress
+
+# Affects entire subnet immediately
+# Easier than updating many security groups
+```
+
+**When Security Groups Alone Are Sufficient**:
+
+1. **Standard Application Architecture**
+   - Normal traffic patterns
+   - No need for explicit denies
+   - Instance-level control adequate
+
+2. **Dynamic Environments**
+   - Instances frequently created/destroyed
+   - Security groups easier to manage
+   - Auto-scaling scenarios
+
+3. **Microservices**
+   - Fine-grained service-to-service communication
+   - Security groups reference each other
+   - More flexible than subnet-level rules
+
+**Comparison**:
+
+| Scenario | Security Groups Only | SG + NACLs |
+|----------|---------------------|------------|
+| Web app in public subnet | ✅ Sufficient | ⚠️ Optional |
+| Database in private subnet | ✅ Sufficient | ✅ Recommended |
+| PCI DSS compliance | ❌ Insufficient | ✅ Required |
+| Known malicious IPs | ❌ Can't deny | ✅ Use NACLs |
+| Multi-tenant environment | ⚠️ Complex | ✅ Easier with NACLs |
+| Cost-sensitive | ✅ No additional cost | ✅ No additional cost |
+
+**Best Practice Recommendation**:
+
+```
+Standard Setup:
+1. Use Security Groups as primary control
+2. Leave NACLs with default (allow all)
+3. Add NACL rules only when needed:
+   - Explicit denies
+   - Compliance requirements
+   - Subnet-level isolation
+   - Additional security layer
+
+When in Doubt:
+- Start with Security Groups
+- Add NACL rules if specific need arises
+- Don't over-complicate with unnecessary NACL rules
+```
+
+**Real-World Example**:
+```
+3-Tier Application:
+
+Security Groups (Primary):
+- ALB-SG: Allow 80,443 from internet
+- Web-SG: Allow 80,443 from ALB-SG
+- App-SG: Allow 8080 from Web-SG
+- DB-SG: Allow 5432 from App-SG
+
+NACLs (Additional Layer):
+- Public subnet NACL: Default (allow all)
+- Private app subnet NACL: Default (allow all)
+- Private DB subnet NACL:
+  - Deny from test subnet (10.0.100.0/24)
+  - Deny known bad IPs
+  - Allow all others
+
+Result:
+- Security groups handle normal traffic control
+- NACLs provide additional protection for sensitive database
+- Easy to manage, not over-complicated
+```
+
+---
+
+[Continue with Tasks 5.4 and 5.5...]
+
