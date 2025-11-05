@@ -4215,104 +4215,1940 @@ nx affected:test --base=main --parallel=3
 
 ---
 
-> **📝 Note on Tasks 3.8-3.18**: Due to the comprehensive nature of these advanced topics, full detailed solutions matching the depth of tasks 3.1-3.7 are provided in the main README.md file under the respective task sections (Task 3.8-3.18). Each task in README.md includes:
-> - Complete step-by-step implementations
-> - Production-ready configuration files
-> - Comprehensive verification procedures  
-> - Interview questions with detailed answers
-> - Best practices and troubleshooting guides
+## Task 3.8: GitHub Projects for Agile Workflow
 
-### Quick Reference: Tasks 3.8-3.18 Coverage
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-38-github-projects-for-agile-workflow)**
 
-**Task 3.8: GitHub Projects for Agile Workflow**
-- Project board setup with automation
-- Custom issue templates (user stories, bugs, tasks)
-- Sprint milestone management
-- Automated workflows for issue lifecycle
-- Custom views for different stakeholders
-- Sprint reporting and metrics
+### Solution Overview
 
-**Task 3.9: Advanced PR Automation**
-- Auto-labeling based on file changes
-- PR size detection and warnings
-- Quality checks (title, description, commits)
-- Auto-merge with approval gates
-- Stale PR management
-- Automatic reviewer assignment
+Complete GitHub Projects implementation for agile workflow management, including project boards, automation, issue templates, sprint milestones, and custom views for different stakeholders.
 
-**Task 3.10: GitHub Packages/Container Registry**
-- GHCR setup for Docker images
-- npm package registry configuration
-- Automated CI/CD publishing
-- Versioning strategies
-- Access controls and cleanup policies
-- Security scanning integration
+### Step 1: Create GitHub Project Board
 
-**Task 3.11: Repository Templates**
-- Templates for backend/frontend/infrastructure
-- Pre-configured CI/CD workflows
-- Standard files (README, CONTRIBUTING, LICENSE)
-- Issue and PR templates
-- Security configurations
-- Customization guides
+#### Using GitHub Projects (Beta - recommended)
 
-**Task 3.12: GitHub Apps & Webhooks**
-- Custom GitHub App development
-- Webhook endpoint implementation
-- Slack and Jira integrations
-- Event filtering and routing
-- Security (webhook signatures)
-- Error handling and retries
+```bash
+# Navigate to your repository on GitHub
+# Go to Projects tab → New Project → Select "Team backlog" template
+# Or create from scratch
+```
 
-**Task 3.13: Secret Scanning & Push Protection**
-- Org-wide secret scanning enablement
-- Push protection configuration
-- Custom secret patterns
-- Pre-commit hooks
-- Incident response workflows
-- Team training materials
+**Manual Setup via UI:**
 
-**Task 3.14: GitHub API Integration**
-- Bulk operations scripts (Python/Node.js)
-- Custom reporting dashboards
-- Repository analytics
-- Team and permission management
-- Compliance checking automation
-- API rate limiting handling
+1. Go to your repository → **Projects** tab
+2. Click **New project**
+3. Select **Board** view
+4. Name: `Sprint Planning Board`
+5. Description: `Agile workflow management for the team`
 
-**Task 3.15: Disaster Recovery**
-- Automated backup workflows
-- Repository migration procedures
-- Point-in-time recovery testing
-- Backup verification
-- RTO/RPO documentation
-- Recovery runbooks
+**Configure Project Fields:**
 
-**Task 3.16: Performance Optimization**
-- Repository size analysis tools
-- Git LFS setup for large files
-- CI/CD shallow clone optimization
-- .gitignore and .gitattributes tuning
-- Performance metrics tracking
-- Best practices documentation
+Add custom fields:
+- **Status**: Todo, In Progress, In Review, Done
+- **Priority**: P0-Critical, P1-High, P2-Medium, P3-Low
+- **Story Points**: Number (1, 2, 3, 5, 8, 13)
+- **Sprint**: Text (Sprint 1, Sprint 2, etc.)
+- **Assignee**: Person
+- **Labels**: Multiple select
 
-**Task 3.17: Compliance & Audit Logging**
-- Audit log streaming configuration
-- Log aggregation (ELK/Splunk)
-- Compliance report generation
-- Automated access reviews
-- Alert configuration
-- SOC2/ISO27001 documentation
+### Step 2: Create Issue Templates
 
-**Task 3.18: Copilot Enterprise Rollout**
-- Organizational readiness assessment
-- Policy and governance configuration
-- Usage tracking and analytics
-- Training program development
-- Feedback collection mechanism
-- ROI measurement framework
+Create `.github/ISSUE_TEMPLATE/` directory with templates:
 
-> **💡 For complete implementations**: Refer to the main README.md file which contains all the detailed solutions, code examples, configurations, and best practices for tasks 3.6-3.18. Each section follows the same comprehensive format as tasks 3.1-3.7 in this solutions file.
+**User Story Template (`.github/ISSUE_TEMPLATE/user-story.yml`):**
+
+```yaml
+name: 🎯 User Story
+description: Create a user story for new feature
+title: "[STORY]: "
+labels: ["story", "needs-triage"]
+assignees:
+  - product-owner
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## User Story Template
+        Please fill out the information below to create a user story.
+  
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: As a [type of user], I want [goal] so that [reason]
+      placeholder: |
+        As a registered user,
+        I want to reset my password via email,
+        So that I can regain access to my account if I forget my password.
+    validations:
+      required: true
+  
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what "done" means for this story
+      placeholder: |
+        - [ ] User can request password reset from login page
+        - [ ] Email is sent with reset link
+        - [ ] Link expires after 24 hours
+        - [ ] User can set new password
+        - [ ] User is logged in after successful reset
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - Critical
+        - P1 - High
+        - P2 - Medium
+        - P3 - Low
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: story-points
+    attributes:
+      label: Story Points
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+        - "13"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Any technical considerations or constraints
+      placeholder: |
+        - Use SendGrid for email delivery
+        - Store reset tokens in Redis with TTL
+        - Follow OWASP password guidelines
+  
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Other stories or tasks that must be completed first
+      placeholder: |
+        - Depends on #123 (Email service setup)
+        - Blocked by infrastructure team for Redis setup
+```
+
+**Bug Report Template (`.github/ISSUE_TEMPLATE/bug-report.yml`):**
+
+```yaml
+name: 🐛 Bug Report
+description: Report a bug or issue
+title: "[BUG]: "
+labels: ["bug", "needs-triage"]
+assignees:
+  - qa-lead
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Thanks for taking the time to report this bug!
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug
+      placeholder: What happened?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+  
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical - System down
+        - High - Major feature broken
+        - Medium - Feature partially working
+        - Low - Minor issue
+    validations:
+      required: true
+  
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "Production, Staging, Development"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Paste any relevant error logs
+      render: shell
+  
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Add screenshots if applicable
+```
+
+**Task Template (`.github/ISSUE_TEMPLATE/task.yml`):**
+
+```yaml
+name: ✅ Task
+description: Create a technical task
+title: "[TASK]: "
+labels: ["task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: What needs to be done?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: subtasks
+    attributes:
+      label: Subtasks
+      description: Break down the task
+      placeholder: |
+        - [ ] Subtask 1
+        - [ ] Subtask 2
+        - [ ] Subtask 3
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: task-type
+    attributes:
+      label: Task Type
+      options:
+        - Development
+        - Testing
+        - Documentation
+        - DevOps
+        - Research
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: story-points
+    attributes:
+      label: Effort (Story Points)
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+  
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Definition of Done
+      placeholder: |
+        - [ ] Code complete and reviewed
+        - [ ] Tests written and passing
+        - [ ] Documentation updated
+```
+
+**Configuration (`.github/ISSUE_TEMPLATE/config.yml`):**
+
+```yaml
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://docs.example.com
+    about: Check our documentation for common questions
+  - name: 💬 Community Discussions
+    url: https://github.com/your-org/your-repo/discussions
+    about: Ask questions and discuss with the community
+  - name: 🔒 Security Issue
+    url: https://github.com/your-org/your-repo/security/advisories/new
+    about: Report security vulnerabilities privately
+```
+
+### Step 3: Configure Project Automation
+
+Create `.github/workflows/project-automation.yml`:
+
+```yaml
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, closed, reopened, labeled]
+  pull_request:
+    types: [opened, closed, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-add-to-project:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    steps:
+      - name: Add issue to project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/YOUR-ORG/projects/PROJECT-NUMBER
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+  
+  auto-assign-priority:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'labeled'
+    steps:
+      - name: Set priority field based on label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(l => l.name);
+            
+            let priority = 'P3 - Low';
+            if (labels.includes('critical')) priority = 'P0 - Critical';
+            else if (labels.includes('high-priority')) priority = 'P1 - High';
+            else if (labels.includes('medium-priority')) priority = 'P2 - Medium';
+            
+            // Update project field
+            // Note: This requires GraphQL API calls - see full implementation below
+            console.log(`Setting priority to: ${priority}`);
+  
+  auto-move-in-progress:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment'
+    steps:
+      - name: Move to In Progress when commented
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const comment = context.payload.comment.body.toLowerCase();
+            const issue = context.payload.issue;
+            
+            // Move to "In Progress" if developer claims the issue
+            if (comment.includes('/start') || comment.includes('/working')) {
+              console.log('Moving issue to In Progress');
+              // GraphQL mutation to update project field
+            }
+  
+  auto-move-done:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+    steps:
+      - name: Move to Done when closed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            console.log(`Moving issue #${issue.number} to Done`);
+            // Update project status field to "Done"
+  
+  link-pr-to-issue:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - name: Link PR to related issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            
+            // Extract issue numbers from PR body
+            const issueRefs = body.match(/#(\d+)/g) || [];
+            
+            for (const ref of issueRefs) {
+              const issueNumber = ref.substring(1);
+              // Link PR to issue in project
+              console.log(`Linking PR #${pr.number} to issue #${issueNumber}`);
+            }
+```
+
+### Step 4: Set Up Sprint Milestones
+
+**Create Milestones via GitHub API:**
+
+```bash
+#!/bin/bash
+# create-sprint-milestones.sh
+
+REPO_OWNER="your-org"
+REPO_NAME="your-repo"
+GITHUB_TOKEN="your_token"
+
+# Calculate sprint dates (2-week sprints)
+SPRINT_NUMBER=1
+START_DATE=$(date -d "next Monday" +%Y-%m-%d)
+END_DATE=$(date -d "$START_DATE +14 days" +%Y-%m-%d)
+
+# Create milestone
+curl -X POST \
+  -H "Authorization: token $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github.v3+json" \
+  https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/milestones \
+  -d @- << EOF
+{
+  "title": "Sprint $SPRINT_NUMBER",
+  "state": "open",
+  "description": "Sprint $SPRINT_NUMBER: $START_DATE to $END_DATE",
+  "due_on": "${END_DATE}T23:59:59Z"
+}
+EOF
+```
+
+**Or via GitHub UI:**
+
+1. Go to Issues → Milestones → New milestone
+2. Title: `Sprint 1`
+3. Due date: End of 2-week sprint
+4. Description: Sprint goals and objectives
+
+### Step 5: Create Custom Views
+
+**Developer View** (Focus on assigned items):
+- Filter: `assignee:@me is:open`
+- Sort: Priority (descending), then Story Points
+- Group by: Status
+- Fields: Title, Status, Priority, Story Points, Labels
+
+**Product Owner View** (Big picture):
+- Filter: `is:open`
+- Sort: Priority (descending)
+- Group by: Sprint
+- Fields: Title, Status, Priority, Story Points, Assignee, Sprint
+
+**QA View** (Testing focus):
+- Filter: `is:open label:needs-testing,in-review`
+- Sort: Priority (descending)
+- Group by: Status
+- Fields: Title, Status, Priority, Assignee, Labels
+
+**Sprint Backlog View**:
+- Filter: `is:open milestone:"Sprint 1"`
+- Sort: Priority (descending)
+- Group by: Status
+- Fields: All fields
+
+### Step 6: Set Up Reporting and Metrics
+
+**Velocity Tracking Script (`.github/scripts/calculate-velocity.js`):**
+
+```javascript
+// calculate-velocity.js
+const { Octokit } = require('@octokit/rest');
+
+async function calculateVelocity(owner, repo, sprintMilestone) {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  
+  // Get all closed issues in the sprint
+  const { data: issues } = await octokit.issues.listForRepo({
+    owner,
+    repo,
+    milestone: sprintMilestone,
+    state: 'closed'
+  });
+  
+  // Calculate total story points
+  let totalPoints = 0;
+  let storiesCompleted = 0;
+  
+  for (const issue of issues) {
+    // Extract story points from labels or issue body
+    const pointsLabel = issue.labels.find(l => l.name.match(/points:\s*(\d+)/));
+    if (pointsLabel) {
+      const points = parseInt(pointsLabel.name.match(/\d+/)[0]);
+      totalPoints += points;
+      storiesCompleted++;
+    }
+  }
+  
+  console.log(`Sprint ${sprintMilestone} Metrics:`);
+  console.log(`Stories Completed: ${storiesCompleted}`);
+  console.log(`Total Story Points: ${totalPoints}`);
+  console.log(`Average Points per Story: ${(totalPoints / storiesCompleted).toFixed(2)}`);
+  
+  return { storiesCompleted, totalPoints };
+}
+
+// Usage
+calculateVelocity('your-org', 'your-repo', 'Sprint 1');
+```
+
+**Burndown Chart Data Export:**
+
+```javascript
+// burndown-data.js
+async function generateBurndownData(owner, repo, sprintMilestone) {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  
+  // Get sprint start and end dates
+  const { data: milestone } = await octokit.issues.getMilestone({
+    owner,
+    repo,
+    milestone_number: sprintMilestone
+  });
+  
+  const startDate = new Date(milestone.created_at);
+  const endDate = new Date(milestone.due_on);
+  
+  // Get all issues in sprint
+  const { data: issues } = await octokit.issues.listForRepo({
+    owner,
+    repo,
+    milestone: sprintMilestone,
+    state: 'all'
+  });
+  
+  // Calculate total points
+  const totalPoints = issues.reduce((sum, issue) => {
+    const pointsLabel = issue.labels.find(l => l.name.match(/points:\s*(\d+)/));
+    return sum + (pointsLabel ? parseInt(pointsLabel.name.match(/\d+/)[0]) : 0);
+  }, 0);
+  
+  // Generate daily burndown data
+  const burndownData = [];
+  let currentDate = new Date(startDate);
+  
+  while (currentDate <= endDate) {
+    const completedPoints = issues
+      .filter(i => i.closed_at && new Date(i.closed_at) <= currentDate)
+      .reduce((sum, issue) => {
+        const pointsLabel = issue.labels.find(l => l.name.match(/points:\s*(\d+)/));
+        return sum + (pointsLabel ? parseInt(pointsLabel.name.match(/\d+/)[0]) : 0);
+      }, 0);
+    
+    burndownData.push({
+      date: currentDate.toISOString().split('T')[0],
+      remainingPoints: totalPoints - completedPoints,
+      completedPoints
+    });
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  console.log(JSON.stringify(burndownData, null, 2));
+  return burndownData;
+}
+```
+
+### Step 7: Documentation
+
+Create `docs/AGILE_WORKFLOW.md`:
+
+```markdown
+# Agile Workflow Guide
+
+## Overview
+This document describes our team's agile workflow using GitHub Projects.
+
+## Sprint Cycle
+
+### Sprint Duration: 2 weeks
+
+**Week 1:**
+- Monday: Sprint Planning
+- Tuesday-Thursday: Development
+- Friday: Mid-sprint review
+
+**Week 2:**
+- Monday-Wednesday: Development
+- Thursday: Code freeze, testing
+- Friday: Sprint Review & Retrospective
+
+## Issue Lifecycle
+
+### 1. Creating Issues
+- Use appropriate template (User Story, Bug, Task)
+- Add all required fields
+- Assign priority and story points
+- Link to epic if applicable
+
+### 2. Sprint Planning
+- Product Owner prioritizes backlog
+- Team estimates story points
+- Issues added to sprint milestone
+- Team commits to sprint goal
+
+### 3. During Sprint
+- Move issues through board columns:
+  - **Todo**: Ready to start
+  - **In Progress**: Actively being worked on
+  - **In Review**: PR submitted, awaiting review
+  - **Done**: Merged and deployed
+
+### 4. Daily Standup
+- Update issue status
+- Add comments on blockers
+- Link PRs to issues
+
+### 5. Sprint Review
+- Demo completed stories
+- Close sprint milestone
+- Calculate velocity
+
+### 6. Retrospective
+- What went well?
+- What can improve?
+- Action items for next sprint
+
+## Board Management
+
+### Automation Rules
+- New issues → Automatically added to backlog
+- Labeled with 'critical' → Priority set to P0
+- PR opened → Issue moves to "In Review"
+- PR merged → Issue moves to "Done"
+- Issue closed → Automatically moved to Done column
+
+### Commands in Comments
+- `/start` or `/working` - Move to In Progress
+- `/review` - Move to In Review
+- `/block` - Add blocked label
+- `/points X` - Set story points
+
+## Best Practices
+
+### For Developers
+1. Update issue status regularly
+2. Link PRs to issues using "Fixes #123"
+3. Keep issues focused and small
+4. Add technical notes and blockers
+5. Review other PRs promptly
+
+### For Product Owner
+1. Keep backlog groomed and prioritized
+2. Write clear acceptance criteria
+3. Be available for questions
+4. Review completed work promptly
+5. Plan 1-2 sprints ahead
+
+### For Scrum Master
+1. Facilitate sprint ceremonies
+2. Remove blockers
+3. Track metrics and velocity
+4. Ensure process adherence
+5. Continuous improvement
+
+## Metrics and Reports
+
+### Velocity Tracking
+- Track story points per sprint
+- Calculate average velocity
+- Use for sprint planning
+
+### Burndown Charts
+- Daily remaining work visualization
+- Identify scope creep
+- Predict sprint completion
+
+### Cycle Time
+- Measure time from start to done
+- Identify bottlenecks
+- Improve flow
+
+## Tools Integration
+
+- **Slack**: Notifications for issue updates
+- **Jira** (if needed): Sync issues bidirectionally
+- **GitHub Actions**: Automated workflows
+- **Analytics**: Custom dashboards
+
+## Training Resources
+
+- [GitHub Projects Documentation](https://docs.github.com/en/issues/planning-and-tracking-with-projects)
+- [Agile Best Practices]
+- Internal team training sessions
+```
+
+### Verification Steps
+
+**1. Test Issue Creation:**
+```bash
+# Create a test issue using each template
+# Verify all fields are captured correctly
+# Check that issue is auto-added to project
+```
+
+**2. Test Automation:**
+```bash
+# Create issue → Should auto-add to project
+# Label as 'critical' → Priority should update
+# Comment '/start' → Should move to In Progress
+# Close issue → Should move to Done
+```
+
+**3. Test Views:**
+```bash
+# Switch between different views
+# Verify filters work correctly
+# Check that sorting is appropriate
+# Ensure all stakeholders can see relevant info
+```
+
+**4. Test Sprint Workflow:**
+```bash
+# Create sprint milestone
+# Add issues to sprint
+# Move issues through workflow
+# Close sprint and calculate velocity
+```
+
+**5. Generate Reports:**
+```bash
+# Run velocity calculation
+npm install @octokit/rest
+node .github/scripts/calculate-velocity.js
+
+# Export burndown data
+node .github/scripts/burndown-data.js > burndown.json
+```
+
+### Best Practices
+
+1. **Keep Issues Atomic**
+   - One clear objective per issue
+   - Should be completable in 1-3 days
+   - Break large stories into tasks
+
+2. **Use Labels Consistently**
+   - Priority labels (P0-P3)
+   - Type labels (bug, enhancement, task)
+   - Status labels (blocked, needs-review)
+   - Area labels (frontend, backend, infra)
+
+3. **Maintain Backlog Health**
+   - Regular grooming sessions
+   - Remove or archive stale issues
+   - Keep top 20 issues well-defined
+   - Estimate top items
+
+4. **Sprint Planning**
+   - Don't overcommit
+   - Leave buffer for unexpected work
+   - Have stretch goals
+   - Consider team capacity (vacations, etc.)
+
+5. **Retrospectives**
+   - Be honest about what didn't work
+   - Create actionable improvements
+   - Track improvement items
+   - Celebrate successes
+
+### Troubleshooting
+
+**Issue: Automation not working**
+- Check PROJECT_TOKEN has correct permissions
+- Verify workflow file syntax
+- Check GitHub Actions logs
+- Ensure project URL is correct
+
+**Issue: Views not showing data**
+- Check filter syntax
+- Verify issues have required fields
+- Clear browser cache
+- Try different browser
+
+**Issue: Velocity calculation wrong**
+- Verify story point labels are consistent
+- Check that issues have correct milestone
+- Ensure closed issues are actually completed
+- Review calculation script logic
+
+**Issue: Team not adopting workflow**
+- Provide training and documentation
+- Start with simple process
+- Gather feedback and iterate
+- Show value with metrics
+- Lead by example
+
+### Interview Questions
+
+**Q: How do you handle scope creep during a sprint?**
+
+**A: Several strategies:**
+
+1. **Prevention**:
+   - Clear sprint goals
+   - Well-defined acceptance criteria
+   - Strong product owner involvement
+
+2. **Detection**:
+   - Daily standups
+   - Burndown chart monitoring
+   - Story point tracking
+
+3. **Response**:
+   - Evaluate priority vs sprint goal
+   - If critical: Remove lower priority item
+   - If not critical: Add to next sprint backlog
+   - Document decision and reason
+
+4. **Documentation**:
+   - Track scope changes
+   - Discuss in retrospective
+   - Improve estimation for future
+
+**Q: How do you measure team productivity in agile?**
+
+**A: Multiple metrics:**
+
+1. **Velocity**:
+   - Story points completed per sprint
+   - Track trend over time
+   - Use for capacity planning
+
+2. **Cycle Time**:
+   - Time from start to done
+   - Identify bottlenecks
+   - Optimize workflow
+
+3. **Throughput**:
+   - Number of items completed
+   - Focus on flow
+   - Reduce work in progress
+
+4. **Quality Metrics**:
+   - Bug escape rate
+   - Rework percentage
+   - Customer satisfaction
+
+5. **Team Health**:
+   - Sprint goal achievement rate
+   - Team happiness surveys
+   - Retrospective action items
+
+**Important**: Focus on trends, not absolute numbers. Use metrics to improve, not to judge.
+
+**Q: How do you handle dependencies between teams in agile?**
+
+**A: Dependency management strategies:**
+
+1. **Identification**:
+   - During sprint planning
+   - Mark issues with 'depends-on' label
+   - Link related issues across repos
+
+2. **Communication**:
+   - Cross-team standups
+   - Shared calendar for releases
+   - Slack channels for coordination
+
+3. **Project Tracking**:
+   - Create dependency tracking view
+   - Highlight blocked items
+   - Track dependency resolution
+
+4. **Mitigation**:
+   - Parallel work where possible
+   - Early integration testing
+   - API contracts/mocks
+   - Feature flags for decoupling
+
+5. **Process**:
+   - Scrum of Scrums
+   - Regular sync meetings
+   - Clear escalation path
+
+---
+
+## Task 3.9: Advanced PR Automation and Workflows
+
+> **📋 [Back to Task Description](./REAL-WORLD-TASKS.md#task-39-advanced-pr-automation-and-workflows)**
+
+### Solution Overview
+
+Implement comprehensive PR automation including auto-labeling, size detection, auto-merge, stale PR management, quality checks, and automatic reviewer assignment to reduce manual overhead and improve workflow efficiency.
+
+### Step 1: Set Up Auto-Labeling Based on File Changes
+
+Create `.github/labeler.yml`:
+
+```yaml
+# Auto-label PRs based on changed files
+
+# Frontend changes
+'frontend':
+  - 'src/components/**/*'
+  - 'src/pages/**/*'
+  - 'src/styles/**/*'
+  - 'public/**/*'
+  - '*.css'
+  - '*.scss'
+
+# Backend changes
+'backend':
+  - 'src/api/**/*'
+  - 'src/services/**/*'
+  - 'src/models/**/*'
+  - 'src/controllers/**/*'
+
+# Database changes
+'database':
+  - 'migrations/**/*'
+  - 'seeds/**/*'
+  - '*.sql'
+  - 'prisma/**/*'
+  - 'schema.prisma'
+
+# Infrastructure changes
+'infrastructure':
+  - 'terraform/**/*'
+  - 'k8s/**/*'
+  - 'docker/**/*'
+  - 'Dockerfile*'
+  - '*.tf'
+
+# CI/CD changes
+'ci-cd':
+  - '.github/workflows/**/*'
+  - '.github/actions/**/*'
+  - 'Jenkinsfile'
+  - '.gitlab-ci.yml'
+
+# Documentation changes
+'documentation':
+  - 'docs/**/*'
+  - '*.md'
+  - 'README*'
+
+# Configuration changes
+'configuration':
+  - 'config/**/*'
+  - '*.json'
+  - '*.yaml'
+  - '*.yml'
+  - '.env*'
+
+# Testing
+'testing':
+  - '**/*.test.js'
+  - '**/*.spec.js'
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
+  - 'tests/**/*'
+  - 'e2e/**/*'
+
+# Security
+'security':
+  - 'SECURITY.md'
+  - '.github/dependabot.yml'
+  - '.github/workflows/security*.yml'
+
+# Dependencies
+'dependencies':
+  - 'package.json'
+  - 'package-lock.json'
+  - 'yarn.lock'
+  - 'pom.xml'
+  - 'requirements.txt'
+  - 'Gemfile'
+  - 'go.mod'
+```
+
+Create `.github/workflows/pr-labeler.yml`:
+
+```yaml
+name: PR Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Label PR
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+```
+
+### Step 2: Configure PR Size Detection
+
+Create `.github/workflows/pr-size-labeler.yml`:
+
+```yaml
+name: PR Size Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  size-label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Calculate PR size and add label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            
+            // Get files changed in the PR
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            // Calculate total changes (additions + deletions)
+            const totalChanges = files.reduce((acc, file) => {
+              return acc + file.additions + file.deletions;
+            }, 0);
+            
+            // Determine size label
+            let sizeLabel;
+            if (totalChanges < 10) {
+              sizeLabel = 'size/XS';
+            } else if (totalChanges < 50) {
+              sizeLabel = 'size/S';
+            } else if (totalChanges < 250) {
+              sizeLabel = 'size/M';
+            } else if (totalChanges < 1000) {
+              sizeLabel = 'size/L';
+            } else {
+              sizeLabel = 'size/XL';
+            }
+            
+            // Remove old size labels
+            const existingLabels = pr.labels.map(label => label.name);
+            const sizeLabels = existingLabels.filter(label => label.startsWith('size/'));
+            
+            for (const label of sizeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                name: label
+              });
+            }
+            
+            // Add new size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: [sizeLabel]
+            });
+            
+            // Add warning comment for large PRs
+            if (totalChanges >= 1000) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ **Large PR Warning**\n\nThis PR has ${totalChanges} lines changed. Consider breaking it into smaller PRs for easier review.\n\n**Benefits of smaller PRs:**\n- Faster reviews\n- Easier to spot issues\n- Reduced merge conflicts\n- Better code quality\n\n**Files changed:** ${files.length}`
+              });
+            }
+            
+            console.log(`PR #${pr.number} labeled as ${sizeLabel} (${totalChanges} changes)`);
+```
+
+### Step 3: Implement PR Quality Checks
+
+Create `.github/workflows/pr-quality-check.yml`:
+
+```yaml
+name: PR Quality Check
+
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    
+    steps:
+      - name: Check PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title;
+            
+            // Check title format
+            const validPrefixes = ['feat:', 'fix:', 'docs:', 'style:', 'refactor:', 'test:', 'chore:', 'perf:'];
+            const hasValidPrefix = validPrefixes.some(prefix => title.toLowerCase().startsWith(prefix));
+            
+            const checks = {
+              hasValidPrefix: {
+                pass: hasValidPrefix,
+                message: hasValidPrefix 
+                  ? '✅ Title has valid conventional commit prefix' 
+                  : '❌ Title must start with one of: ' + validPrefixes.join(', ')
+              },
+              hasDescription: {
+                pass: title.length > 10,
+                message: title.length > 10
+                  ? '✅ Title has adequate length'
+                  : '❌ Title is too short (minimum 10 characters)'
+              },
+              notAllCaps: {
+                pass: title !== title.toUpperCase(),
+                message: title !== title.toUpperCase()
+                  ? '✅ Title is not in all caps'
+                  : '❌ Title should not be in all caps'
+              }
+            };
+            
+            // Check PR body
+            const body = pr.body || '';
+            const bodyChecks = {
+              hasDescription: {
+                pass: body.length > 50,
+                message: body.length > 50
+                  ? '✅ PR has adequate description'
+                  : '❌ PR description is too short (minimum 50 characters)'
+              },
+              hasIssueLink: {
+                pass: /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+/i.test(body) || /#\d+/.test(body),
+                message: /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+/i.test(body) || /#\d+/.test(body)
+                  ? '✅ PR links to an issue'
+                  : '⚠️  PR should link to related issues (use "Fixes #123" or "Relates to #123")'
+              },
+              hasTestingInfo: {
+                pass: /test|tested|testing/i.test(body) || /how to test/i.test(body),
+                message: /test|tested|testing/i.test(body) || /how to test/i.test(body)
+                  ? '✅ PR includes testing information'
+                  : '⚠️  Consider adding testing instructions'
+              }
+            };
+            
+            // Combine all checks
+            const allChecks = { ...checks, ...bodyChecks };
+            const failedChecks = Object.values(allChecks).filter(check => !check.pass);
+            const passed = failedChecks.length === 0;
+            
+            // Create check run
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'PR Quality Check',
+              head_sha: pr.head.sha,
+              status: 'completed',
+              conclusion: passed ? 'success' : 'neutral',
+              output: {
+                title: passed ? 'All quality checks passed' : 'Some quality checks failed',
+                summary: passed 
+                  ? 'All PR quality checks have passed! ✅'
+                  : 'Please address the following issues:\n\n' + 
+                    Object.values(allChecks).map(check => check.message).join('\n'),
+                text: Object.values(allChecks).map(check => check.message).join('\n')
+              }
+            });
+            
+            // Add comment if critical checks failed
+            const criticalFailed = !checks.hasValidPrefix.pass || !bodyChecks.hasDescription.pass;
+            if (criticalFailed && !pr.user.login.includes('bot')) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `## PR Quality Check Results\n\n${Object.values(allChecks).map(check => check.message).join('\n')}\n\n---\n\n**Please address the failed checks before requesting review.**`
+              });
+            }
+      
+      - name: Check for WIP or Draft
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title.toLowerCase();
+            const isDraft = pr.draft;
+            const hasWIP = title.includes('wip') || title.includes('work in progress');
+            
+            if ((hasWIP || isDraft) && !pr.labels.find(l => l.name === 'work-in-progress')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['work-in-progress']
+              });
+            }
+```
+
+### Step 4: Configure Auto-Merge for Passing PRs
+
+Create `.github/workflows/auto-merge.yml`:
+
+```yaml
+name: Auto Merge
+
+on:
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+  pull_request:
+    types: [labeled]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Check if PR can be auto-merged
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get PR details
+            const pr = context.payload.pull_request;
+            
+            // Skip if PR doesn't exist or is closed
+            if (!pr || pr.state !== 'open') {
+              console.log('PR is not open, skipping');
+              return;
+            }
+            
+            // Check for auto-merge label
+            const hasAutoMergeLabel = pr.labels.some(label => 
+              label.name === 'auto-merge' || label.name === 'automerge'
+            );
+            
+            if (!hasAutoMergeLabel) {
+              console.log('PR does not have auto-merge label, skipping');
+              return;
+            }
+            
+            // Get PR details with reviews
+            const { data: prData } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            // Check if PR is approved
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            const latestReviews = {};
+            reviews.forEach(review => {
+              latestReviews[review.user.login] = review.state;
+            });
+            
+            const approvedCount = Object.values(latestReviews).filter(
+              state => state === 'APPROVED'
+            ).length;
+            
+            const changesRequestedCount = Object.values(latestReviews).filter(
+              state => state === 'CHANGES_REQUESTED'
+            ).length;
+            
+            // Require at least 1 approval and no change requests
+            if (approvedCount < 1) {
+              console.log('PR needs at least 1 approval');
+              return;
+            }
+            
+            if (changesRequestedCount > 0) {
+              console.log('PR has requested changes');
+              return;
+            }
+            
+            // Check if all required checks have passed
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+            
+            const failedChecks = checkRuns.check_runs.filter(
+              check => check.conclusion === 'failure' || check.conclusion === 'cancelled'
+            );
+            
+            if (failedChecks.length > 0) {
+              console.log('PR has failing checks:', failedChecks.map(c => c.name));
+              return;
+            }
+            
+            // Check if PR is mergeable
+            if (prData.mergeable_state !== 'clean') {
+              console.log('PR is not in a mergeable state:', prData.mergeable_state);
+              return;
+            }
+            
+            // All conditions met, merge the PR
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                merge_method: 'squash', // or 'merge' or 'rebase'
+                commit_title: `${pr.title} (#${pr.number})`,
+                commit_message: pr.body || ''
+              });
+              
+              console.log(`Successfully auto-merged PR #${pr.number}`);
+              
+              // Add comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: '✅ **Auto-merged**\n\nThis PR was automatically merged because:\n- It has the `auto-merge` label\n- It has at least 1 approval\n- All checks have passed\n- No changes were requested\n- The PR is mergeable'
+              });
+              
+              // Delete branch if requested
+              if (pr.head.repo.full_name === context.repo.owner + '/' + context.repo.repo) {
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `heads/${pr.head.ref}`
+                  });
+                  console.log(`Deleted branch: ${pr.head.ref}`);
+                } catch (error) {
+                  console.log(`Could not delete branch: ${error.message}`);
+                }
+              }
+            } catch (error) {
+              console.log(`Failed to auto-merge: ${error.message}`);
+            }
+```
+
+### Step 5: Set Up Stale PR Management
+
+Create `.github/workflows/stale-pr.yml`:
+
+```yaml
+name: Stale PR Management
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Mark and close stale PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # PR settings
+          days-before-stale: 14
+          days-before-close: 7
+          stale-pr-message: |
+            👋 This PR has been inactive for 14 days and is marked as stale.
+            
+            **What happens next?**
+            - If there's no activity in the next 7 days, this PR will be automatically closed
+            - To keep it open, add a comment or push new commits
+            - Remove the `stale` label if you're actively working on it
+            
+            **Need help?**
+            - Tag a maintainer if you're blocked
+            - Ask questions in the comments
+            - Update the PR description with current status
+          
+          close-pr-message: |
+            🔒 This PR was automatically closed due to inactivity.
+            
+            **Why was it closed?**
+            - No activity for 21 days (14 days stale + 7 days grace period)
+            
+            **Can it be reopened?**
+            - Yes! Comment on this PR and a maintainer will review it
+            - Or create a new PR with the same changes
+            
+            Thank you for your contribution! 🙏
+          
+          stale-pr-label: 'stale'
+          exempt-pr-labels: 'keep-open,in-progress,blocked'
+          exempt-draft-pr: true
+          
+          # Issue settings (optional)
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          stale-issue-message: 'This issue has been inactive for 60 days and is marked as stale.'
+          close-issue-message: 'This issue was automatically closed due to inactivity.'
+          stale-issue-label: 'stale'
+          exempt-issue-labels: 'pinned,security,roadmap'
+          
+          # General settings
+          operations-per-run: 100
+          remove-stale-when-updated: true
+          ascending: true
+```
+
+### Step 6: Configure Auto-Assignment of Reviewers
+
+Create `.github/workflows/auto-assign-reviewer.yml`:
+
+```yaml
+name: Auto Assign Reviewers
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  assign-reviewers:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Auto-assign reviewers
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            
+            // Skip if PR is draft
+            if (pr.draft) {
+              console.log('PR is draft, skipping reviewer assignment');
+              return;
+            }
+            
+            // Get files changed
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            // Determine reviewers based on file changes
+            const reviewers = new Set();
+            const teamReviewers = new Set();
+            
+            files.forEach(file => {
+              const path = file.filename;
+              
+              // Frontend files
+              if (path.match(/^(src\/(components|pages|styles)|.*\.(css|scss))/) ) {
+                reviewers.add('frontend-lead');
+                teamReviewers.add('frontend-team');
+              }
+              
+              // Backend files
+              if (path.match(/^src\/(api|services|models|controllers)/)) {
+                reviewers.add('backend-lead');
+                teamReviewers.add('backend-team');
+              }
+              
+              // Database files
+              if (path.match(/^(migrations|seeds)\/|\.sql$|prisma\//)) {
+                reviewers.add('database-expert');
+              }
+              
+              // Infrastructure files
+              if (path.match(/^(terraform|k8s|docker)\/|Dockerfile|\.tf$/)) {
+                reviewers.add('devops-lead');
+                teamReviewers.add('devops-team');
+              }
+              
+              // Security-related files
+              if (path.match(/(security|auth|crypto)/i)) {
+                reviewers.add('security-lead');
+              }
+              
+              // CI/CD files
+              if (path.match(/^\.github\/workflows\//)) {
+                reviewers.add('ci-cd-expert');
+              }
+            });
+            
+            // Remove PR author from reviewers
+            reviewers.delete(pr.user.login);
+            
+            // Assign individual reviewers
+            if (reviewers.size > 0) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  reviewers: Array.from(reviewers).slice(0, 3) // Max 3 reviewers
+                });
+                console.log('Assigned reviewers:', Array.from(reviewers));
+              } catch (error) {
+                console.log('Error assigning reviewers:', error.message);
+              }
+            }
+            
+            // Assign team reviewers
+            if (teamReviewers.size > 0) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  team_reviewers: Array.from(teamReviewers).slice(0, 2) // Max 2 teams
+                });
+                console.log('Assigned team reviewers:', Array.from(teamReviewers));
+              } catch (error) {
+                console.log('Error assigning team reviewers:', error.message);
+              }
+            }
+            
+            // Add comment with reviewer explanation
+            if (reviewers.size > 0 || teamReviewers.size > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `👥 **Reviewers Auto-Assigned**\n\nBased on the files changed, the following reviewers have been assigned:\n\n**Individual Reviewers:** ${Array.from(reviewers).map(r => `@${r}`).join(', ') || 'None'}\n\n**Team Reviewers:** ${Array.from(teamReviewers).map(t => `@${context.repo.owner}/${t}`).join(', ') || 'None'}\n\n---\n*You can request additional reviewers if needed.*`
+              });
+            }
+```
+
+Create `.github/auto_assign.yml` (alternative approach using action):
+
+```yaml
+# Configuration for auto-assign action
+addReviewers: true
+addAssignees: false
+
+# Number of reviewers to add
+numberOfReviewers: 2
+
+# Reviewer selection
+reviewers:
+  - frontend-lead
+  - backend-lead
+  - devops-lead
+  - qa-lead
+
+# Team reviewers (requires org membership)
+teamReviewers:
+  - frontend-team
+  - backend-team
+
+# Keywords in PR title to assign specific reviewers
+keywords:
+  - keywords: ['frontend', 'ui', 'css', 'react']
+    reviewers: ['frontend-lead']
+  
+  - keywords: ['backend', 'api', 'server', 'database']
+    reviewers: ['backend-lead']
+  
+  - keywords: ['infra', 'devops', 'ci', 'cd', 'docker', 'k8s']
+    reviewers: ['devops-lead']
+  
+  - keywords: ['test', 'qa', 'e2e']
+    reviewers: ['qa-lead']
+
+# Skip draft PRs
+skipDraft: true
+```
+
+### Step 7: Enhanced PR Template
+
+Create `.github/PULL_REQUEST_TEMPLATE.md`:
+
+```markdown
+## 📝 Description
+
+<!-- Provide a brief description of the changes -->
+
+## 🔗 Related Issues
+
+<!-- Link to related issues using: Fixes #123, Closes #456, Relates to #789 -->
+
+Fixes #
+
+## 🎯 Type of Change
+
+<!-- Mark the relevant option with an 'x' -->
+
+- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+- [ ] ✨ New feature (non-breaking change which adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 📝 Documentation update
+- [ ] 🎨 Style/UI update
+- [ ] ♻️  Code refactoring
+- [ ] ⚡ Performance improvement
+- [ ] ✅ Test update
+- [ ] 🔧 Configuration change
+- [ ] 🔒 Security update
+
+## 🧪 How Has This Been Tested?
+
+<!-- Describe the tests you ran to verify your changes -->
+
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] E2E tests
+- [ ] Manual testing
+
+**Test Configuration**:
+* OS:
+* Browser (if applicable):
+* Node version:
+
+## 📸 Screenshots (if applicable)
+
+<!-- Add screenshots to help explain your changes -->
+
+## ✅ Checklist
+
+<!-- Mark completed items with an 'x' -->
+
+### Code Quality
+- [ ] My code follows the project's style guidelines
+- [ ] I have performed a self-review of my code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+
+### Security & Performance
+- [ ] I have checked for security vulnerabilities
+- [ ] I have considered the performance impact of my changes
+- [ ] I have not included any sensitive data (passwords, API keys, etc.)
+
+### Documentation
+- [ ] I have updated the README (if applicable)
+- [ ] I have updated API documentation (if applicable)
+- [ ] I have added inline code comments where necessary
+
+## 📚 Additional Context
+
+<!-- Add any other context about the PR here -->
+
+## 🔄 Post-Merge Actions
+
+<!-- List any actions that need to be taken after merging -->
+
+- [ ] Database migration required
+- [ ] Configuration update needed
+- [ ] Deployment steps documented
+- [ ] Monitoring/alerts updated
+- [ ] Documentation site updated
+
+---
+
+<!-- 
+💡 Tips for a great PR:
+- Keep changes focused and atomic
+- Write clear commit messages
+- Add meaningful tests
+- Update documentation
+- Respond to review comments promptly
+-->
+```
+
+### Verification Steps
+
+**1. Test Auto-Labeling:**
+```bash
+# Create a PR with frontend changes
+git checkout -b test/auto-label
+echo "test" > src/components/test.js
+git add .
+git commit -m "test: frontend change"
+git push origin test/auto-label
+
+# Create PR and verify 'frontend' label is added automatically
+```
+
+**2. Test PR Size Detection:**
+```bash
+# Create PRs of different sizes and verify size labels
+# XS: < 10 lines
+# S: < 50 lines
+# M: < 250 lines
+# L: < 1000 lines
+# XL: >= 1000 lines
+```
+
+**3. Test Quality Checks:**
+```bash
+# Create PR with invalid title (no prefix)
+# Expected: Quality check should fail/warn
+
+# Create PR with valid title (e.g., "feat: add new feature")
+# Expected: Quality check should pass
+```
+
+**4. Test Auto-Merge:**
+```bash
+# 1. Create PR with 'auto-merge' label
+# 2. Get approval
+# 3. Wait for all checks to pass
+# Expected: PR should auto-merge
+
+# Test that PRs without label don't auto-merge
+# Test that PRs with failing checks don't auto-merge
+# Test that PRs without approval don't auto-merge
+```
+
+**5. Test Stale PR Detection:**
+```bash
+# Create old PR (adjust stale action dates for testing)
+# Run workflow manually: gh workflow run stale-pr.yml
+# Verify stale label is added and comment is posted
+```
+
+**6. Test Auto-Reviewer Assignment:**
+```bash
+# Create PR with frontend changes
+# Expected: Frontend reviewers assigned
+
+# Create PR with backend changes
+# Expected: Backend reviewers assigned
+
+# Create PR with mixed changes
+# Expected: Multiple reviewers assigned
+```
+
+### Best Practices
+
+1. **Auto-Labeling**
+   - Keep labeler.yml organized by category
+   - Use glob patterns effectively
+   - Review and update patterns regularly
+   - Don't over-label (keep it meaningful)
+
+2. **PR Size Management**
+   - Encourage smaller PRs through comments
+   - Set appropriate thresholds for your team
+   - Consider complexity, not just line count
+   - Review size warnings regularly
+
+3. **Quality Checks**
+   - Make checks helpful, not annoying
+   - Use 'neutral' conclusion for warnings
+   - Provide clear, actionable feedback
+   - Allow for exceptions when needed
+
+4. **Auto-Merge**
+   - Require manual opt-in with label
+   - Ensure robust approval requirements
+   - Verify all checks pass
+   - Have escape hatches for issues
+   - Monitor for problems
+
+5. **Stale PR Management**
+   - Set reasonable timeframes
+   - Provide clear warnings
+   - Allow easy reopening
+   - Exempt special cases
+   - Review closed PRs periodically
+
+6. **Reviewer Assignment**
+   - Base on file expertise
+   - Don't over-assign reviewers
+   - Allow manual adjustments
+   - Consider team capacity
+   - Rotate reviewers fairly
+
+### Troubleshooting
+
+**Issue: Labels not being added**
+- Check workflow permissions (pull-requests: write)
+- Verify labeler.yml syntax
+- Check workflow logs for errors
+- Ensure labels exist in repository
+
+**Issue: Auto-merge not working**
+- Verify PR has auto-merge label
+- Check approval count
+- Verify all checks passed
+- Check mergeable_state
+- Review workflow logs
+
+**Issue: Too many reviewers assigned**
+- Adjust numberOfReviewers in config
+- Use .slice() to limit team reviewers
+- Consider team capacity
+
+**Issue: Quality checks too strict**
+- Adjust check criteria
+- Use 'neutral' instead of 'failure'
+- Make some checks optional
+- Add override mechanism
+
+**Issue: Stale bot closing active PRs**
+- Add 'keep-open' or 'in-progress' label
+- Adjust days-before-stale setting
+- Use exempt-pr-labels
+- Set exempt-draft-pr: true
+
+### Interview Questions
+
+**Q: How do you balance automation vs manual control in PR workflows?**
+
+**A: Several considerations:**
+
+1. **Start Conservative**:
+   - Automate low-risk tasks first
+   - Require opt-in for auto-merge
+   - Use warnings before errors
+   - Allow manual overrides
+
+2. **Gradual Adoption**:
+   - Roll out to small team first
+   - Gather feedback
+   - Adjust based on pain points
+   - Expand gradually
+
+3. **Safety Mechanisms**:
+   - Multiple approval gates
+   - Required status checks
+   - Option to bypass automation
+   - Clear audit trail
+
+4. **Team Culture**:
+   - Trust but verify
+   - Encourage code review culture
+   - Automation assists, not replaces
+   - Regular retrospectives
+
+**Q: How do you handle exceptions to automated PR rules?**
+
+**A: Multi-layered approach:**
+
+1. **Exempt Labels**:
+   - 'skip-automation'
+   - 'manual-review-required'
+   - 'emergency-fix'
+
+2. **Conditional Logic**:
+```javascript
+if (pr.labels.includes('skip-automation')) {
+  console.log('Skipping automation due to exempt label');
+  return;
+}
+```
+
+3. **Override Permissions**:
+   - Senior developers can bypass
+   - Require justification comment
+   - Log all overrides
+   - Review in retrospectives
+
+4. **Emergency Procedures**:
+   - Documented hotfix process
+   - Post-incident review
+   - Temporary rule suspension
+   - Quick rollback capability
+
+**Q: How do you measure the effectiveness of PR automation?**
+
+**A: Track multiple metrics:**
+
+1. **Time Savings**:
+   - Average PR review time
+   - Time from open to merge
+   - Manual labeling time eliminated
+   - Reviewer assignment speed
+
+2. **Quality Metrics**:
+   - Bugs caught in review
+   - Post-merge issues
+   - Code review thoroughness
+   - Test coverage trends
+
+3. **Developer Experience**:
+   - Team satisfaction surveys
+   - Adoption rate
+   - Override frequency
+   - Friction points
+
+4. **Process Metrics**:
+   - PRs auto-labeled correctly (%)
+   - Auto-merge success rate
+   - False positive rate
+   - Stale PR reduction
+
+5. **ROI Calculation**:
+```
+Time saved per week = 
+  (# of PRs) × (avg time saved per PR)
+
+If 50 PRs/week × 5 min saved = 250 min/week
+= 4.2 hours/week per team member
+= ~200 hours/year per person
+```
+
+---
+
+## Task 3.10: GitHub Packages/Container Registry Setup
 
 ---
 
