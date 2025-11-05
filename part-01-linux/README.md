@@ -6,6 +6,7 @@ This section covers comprehensive Linux skills required for DevOps engineers man
 
 ## 📚 Available Resources
 
+- **[QUICK-START-GUIDE.md](QUICK-START-GUIDE.md)** - 🚀 **START HERE!** Quick reference with task lookup table and learning paths
 - **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 18 practical, executable tasks with scenarios, requirements, and validation checklists for hands-on learning and assignments
 - **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - ✨ **NEW!** Complete, production-ready solutions for all 18 real-world tasks with step-by-step commands, scripts, and configurations
 - **[TASKS-1.4-1.18.md](TASKS-1.4-1.18.md)** - Additional task implementations and examples
