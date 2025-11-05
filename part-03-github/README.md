@@ -4,6 +4,19 @@
 
 This section covers professional Git workflows and GitHub best practices for team collaboration on our 3-tier application project.
 
+## 📚 Available Resources
+
+### Real-World Tasks (Recommended Starting Point)
+- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 📝 10 practical, executable tasks with scenarios, requirements, and validation checklists
+- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - ✅ Complete, production-ready solutions with step-by-step commands and configurations
+- **[NAVIGATION-GUIDE.md](NAVIGATION-GUIDE.md)** - 📚 **NEW!** Learn how to navigate between tasks and solutions efficiently
+
+### Quick Start & Additional Resources
+- **[QUICK-START-GUIDE.md](QUICK-START-GUIDE.md)** - 🚀 Quick reference with task lookup table and learning paths
+- **[TASKS-3.3-3.10.md](TASKS-3.3-3.10.md)** - Additional task implementations and examples
+
+> **💡 New to real-world tasks?** Check out the [Navigation Guide](NAVIGATION-GUIDE.md) to understand how tasks and solutions are organized!
+
 ---
 
 ## Task 3.1: Design Monorepo vs Polyrepo Structure
