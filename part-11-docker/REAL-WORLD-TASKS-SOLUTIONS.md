@@ -864,81 +864,81 @@ ON CONFLICT (email) DO NOTHING;
 
 ## help: Display this help message
 help:
-REA@echo "Available commands:"
-REA@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+	@echo "Available commands:"
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
 ## build: Build all images
 build:
-REAdocker-compose build --no-cache
+	docker-compose build --no-cache
 
 ## up: Start all services
 up:
-REAdocker-compose up -d
+	docker-compose up -d
 
 ## down: Stop all services
 down:
-REAdocker-compose down
+	docker-compose down
 
 ## restart: Restart all services
 restart: down up
 
 ## logs: View logs from all services
 logs:
-REAdocker-compose logs -f
+	docker-compose logs -f
 
 ## logs-backend: View backend logs
 logs-backend:
-REAdocker-compose logs -f backend
+	docker-compose logs -f backend
 
 ## logs-frontend: View frontend logs
 logs-frontend:
-REAdocker-compose logs -f frontend
+	docker-compose logs -f frontend
 
 ## logs-db: View database logs
 logs-db:
-REAdocker-compose logs -f postgres
+	docker-compose logs -f postgres
 
 ## ps: Show running containers
 ps:
-REAdocker-compose ps
+	docker-compose ps
 
 ## health: Check health status of all services
 health:
-REA@docker-compose ps --format json | jq -r '.[] | "\(.Service): \(.Health)"'
+	@docker-compose ps --format json | jq -r '.[] | "\(.Service): \(.Health)"'
 
 ## clean: Stop and remove containers, networks
 clean:
-REAdocker-compose down -v
+	docker-compose down -v
 
 ## prune: Remove unused Docker resources
 prune:
-REAdocker system prune -af
+	docker system prune -af
 
 ## backup: Backup all volumes
 backup:
-REA./scripts/backup-volumes.sh
+	./scripts/backup-volumes.sh
 
 ## restore: Restore volumes from backup
 restore:
-REA./scripts/restore-volumes.sh
+	./scripts/restore-volumes.sh
 
 ## test: Run tests in containers
 test:
-REAdocker-compose exec backend npm test
+	docker-compose exec backend npm test
 
 ## shell-backend: Open shell in backend container
 shell-backend:
-REAdocker-compose exec backend sh
+	docker-compose exec backend sh
 
 ## shell-db: Open psql shell in database
 shell-db:
-REAdocker-compose exec postgres psql -U app_user -d app_db
+	docker-compose exec postgres psql -U app_user -d app_db
 
 ## init: Initialize environment (copy .env, create directories)
 init:
-REA@if [ ! -f .env ]; then cp .env.example .env && echo ".env created from template"; fi
-REA@mkdir -p backend/logs postgres/init nginx/certs
-REA@echo "Initialization complete!"
+	@if [ ! -f .env ]; then cp .env.example .env && echo ".env created from template"; fi
+	@mkdir -p backend/logs postgres/init nginx/certs
+	@echo "Initialization complete!"
 ```
 
 ### Step 6: Startup Script
