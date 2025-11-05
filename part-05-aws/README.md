@@ -2,21 +2,33 @@
 
 ## Overview
 
-This section covers production-ready AWS infrastructure setup for deploying and managing our 3-tier web application (Frontend, Backend API, PostgreSQL) using AWS services.
+This section covers comprehensive AWS skills required for DevOps engineers managing production cloud infrastructure. All tasks are built around deploying our 3-tier web application (Frontend, Backend API, PostgreSQL) on AWS using best practices.
 
 ## 📚 Available Resources
 
-### Real-World Tasks
-- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 6 practical, executable tasks with cloud scenarios
-- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - Complete AWS implementations
+### Real-World Tasks (Recommended Starting Point)
+- **[REAL-WORLD-TASKS.md](REAL-WORLD-TASKS.md)** - 📝 6 practical, executable tasks with cloud scenarios, requirements, and validation checklists
+- **[REAL-WORLD-TASKS-SOLUTIONS.md](REAL-WORLD-TASKS-SOLUTIONS.md)** - ✅ Complete, production-ready AWS implementations with step-by-step commands
+- **[NAVIGATION-GUIDE.md](NAVIGATION-GUIDE.md)** - 📚 Learn how to navigate between tasks and solutions efficiently
 
-### Comprehensive Task Coverage
-This README provides detailed implementations for all 16 AWS tasks covering:
-- VPC design and networking
-- IAM security and permissions
-- EC2, RDS, S3, and ECR
-- CloudWatch monitoring and alerting
-- Security best practices
+### Quick Start & Additional Resources
+- **[QUICK-START-GUIDE.md](QUICK-START-GUIDE.md)** - 🚀 Quick reference with task lookup table and learning paths
+- **[TASKS-5.1-5.18.md](TASKS-5.1-5.18.md)** - 📖 **NEW!** Comprehensive implementations for all 18 AWS tasks with detailed examples, interview questions, and best practices
+
+> **💡 New to AWS DevOps?** Check out the [Quick Start Guide](QUICK-START-GUIDE.md) to understand the learning path and [TASKS-5.1-5.18.md](TASKS-5.1-5.18.md) for in-depth coverage!
+
+### What's Covered
+This section provides detailed implementations for all 18 AWS tasks covering:
+- **Networking**: VPC design, subnets, NAT Gateways, VPC Endpoints, security groups, NACLs
+- **Security**: IAM roles/policies, encryption, CloudTrail, Security Hub, least privilege
+- **Compute**: EC2, Auto Scaling Groups, Launch Templates, instance profiles
+- **Storage**: S3, EBS, EFS, lifecycle policies, versioning, encryption
+- **Database**: RDS Multi-AZ, read replicas, automated backups, parameter groups
+- **Containers**: ECR, ECS, EKS, IAM roles for service accounts
+- **Monitoring**: CloudWatch Logs, Metrics, Alarms, Dashboards, Log Insights
+- **Configuration**: Parameter Store, Secrets Manager, Systems Manager
+- **Cost Optimization**: Resource tagging, cost allocation, Reserved Instances, Spot
+- **High Availability**: Multi-AZ design, load balancing, disaster recovery
 
 ---
 
