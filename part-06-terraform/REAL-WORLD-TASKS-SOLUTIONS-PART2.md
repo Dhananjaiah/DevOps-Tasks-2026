@@ -1693,3 +1693,1756 @@ terraform plan -var="environment=dev"
 10. **DRY Principle**: Avoid repetition with dynamic blocks
 
 ---
+
+## Task 6.7: Provision RDS Database with Terraform
+
+> **📖 [Back to Task](./REAL-WORLD-TASKS.md#task-67-provision-rds-database-with-terraform)**
+
+### Solution Overview
+
+This solution creates a production-ready RDS PostgreSQL instance with proper security, backup configuration, monitoring, and high availability.
+
+### Complete Solution
+
+#### Step 1: RDS Module Structure
+
+```bash
+mkdir -p modules/rds
+cd modules/rds
+touch main.tf variables.tf outputs.tf versions.tf
+```
+
+#### Step 2: RDS Module Variables
+
+```hcl
+# modules/rds/variables.tf
+variable "identifier" {
+  description = "The name of the RDS instance"
+  type        = string
+}
+
+variable "engine" {
+  description = "Database engine"
+  type        = string
+  default     = "postgres"
+
+  validation {
+    condition     = contains(["postgres", "mysql", "mariadb", "oracle-se2", "sqlserver-ex"], var.engine)
+    error_message = "Engine must be a valid RDS engine type."
+  }
+}
+
+variable "engine_version" {
+  description = "Database engine version"
+  type        = string
+}
+
+variable "instance_class" {
+  description = "The instance type of the RDS instance"
+  type        = string
+}
+
+variable "allocated_storage" {
+  description = "The allocated storage in gigabytes"
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.allocated_storage >= 20 && var.allocated_storage <= 65536
+    error_message = "Allocated storage must be between 20 and 65536 GB."
+  }
+}
+
+variable "max_allocated_storage" {
+  description = "Maximum storage for autoscaling"
+  type        = number
+  default     = 100
+}
+
+variable "storage_type" {
+  description = "Storage type"
+  type        = string
+  default     = "gp3"
+
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2"], var.storage_type)
+    error_message = "Storage type must be gp2, gp3, io1, or io2."
+  }
+}
+
+variable "storage_encrypted" {
+  description = "Enable storage encryption"
+  type        = bool
+  default     = true
+}
+
+variable "kms_key_id" {
+  description = "KMS key ID for encryption"
+  type        = string
+  default     = null
+}
+
+variable "db_name" {
+  description = "The name of the database to create"
+  type        = string
+  default     = null
+}
+
+variable "username" {
+  description = "Username for the master DB user"
+  type        = string
+  sensitive   = true
+}
+
+variable "password" {
+  description = "Password for the master DB user"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.password) >= 16
+    error_message = "Password must be at least 16 characters long."
+  }
+}
+
+variable "port" {
+  description = "The port on which the DB accepts connections"
+  type        = number
+  default     = 5432
+}
+
+variable "multi_az" {
+  description = "Enable Multi-AZ deployment"
+  type        = bool
+  default     = false
+}
+
+variable "publicly_accessible" {
+  description = "Bool to control if instance is publicly accessible"
+  type        = bool
+  default     = false
+}
+
+variable "vpc_security_group_ids" {
+  description = "List of VPC security groups to associate"
+  type        = list(string)
+}
+
+variable "db_subnet_group_name" {
+  description = "Name of DB subnet group"
+  type        = string
+}
+
+variable "parameter_group_name" {
+  description = "Name of the DB parameter group"
+  type        = string
+  default     = null
+}
+
+variable "backup_retention_period" {
+  description = "The days to retain backups"
+  type        = number
+  default     = 7
+
+  validation {
+    condition     = var.backup_retention_period >= 0 && var.backup_retention_period <= 35
+    error_message = "Backup retention must be between 0 and 35 days."
+  }
+}
+
+variable "backup_window" {
+  description = "The daily time range for backups"
+  type        = string
+  default     = "03:00-04:00"
+}
+
+variable "maintenance_window" {
+  description = "The window to perform maintenance"
+  type        = string
+  default     = "mon:04:00-mon:05:00"
+}
+
+variable "skip_final_snapshot" {
+  description = "Skip final snapshot on deletion"
+  type        = bool
+  default     = false
+}
+
+variable "final_snapshot_identifier_prefix" {
+  description = "Prefix for final snapshot identifier"
+  type        = string
+  default     = "final"
+}
+
+variable "deletion_protection" {
+  description = "Enable deletion protection"
+  type        = bool
+  default     = false
+}
+
+variable "enabled_cloudwatch_logs_exports" {
+  description = "List of log types to enable for exporting to CloudWatch logs"
+  type        = list(string)
+  default     = []
+}
+
+variable "monitoring_interval" {
+  description = "Enhanced monitoring interval (0, 1, 5, 10, 15, 30, 60)"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = contains([0, 1, 5, 10, 15, 30, 60], var.monitoring_interval)
+    error_message = "Monitoring interval must be 0, 1, 5, 10, 15, 30, or 60 seconds."
+  }
+}
+
+variable "performance_insights_enabled" {
+  description = "Enable Performance Insights"
+  type        = bool
+  default     = false
+}
+
+variable "performance_insights_retention_period" {
+  description = "Retention period for Performance Insights data (days)"
+  type        = number
+  default     = 7
+}
+
+variable "auto_minor_version_upgrade" {
+  description = "Enable automatic minor version upgrades"
+  type        = bool
+  default     = true
+}
+
+variable "apply_immediately" {
+  description = "Apply changes immediately"
+  type        = bool
+  default     = false
+}
+
+variable "tags" {
+  description = "A mapping of tags to assign to the resource"
+  type        = map(string)
+  default     = {}
+}
+```
+
+#### Step 3: RDS Module Main Configuration
+
+```hcl
+# modules/rds/main.tf
+locals {
+  create_monitoring_role = var.monitoring_interval > 0
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.final_snapshot_identifier_prefix}-${var.identifier}-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+}
+
+# RDS Instance
+resource "aws_db_instance" "this" {
+  identifier = var.identifier
+
+  # Engine
+  engine         = var.engine
+  engine_version = var.engine_version
+
+  # Instance
+  instance_class = var.instance_class
+
+  # Storage
+  allocated_storage     = var.allocated_storage
+  max_allocated_storage = var.max_allocated_storage
+  storage_type          = var.storage_type
+  storage_encrypted     = var.storage_encrypted
+  kms_key_id            = var.kms_key_id
+
+  # Database
+  db_name  = var.db_name
+  username = var.username
+  password = var.password
+  port     = var.port
+
+  # Network
+  multi_az               = var.multi_az
+  publicly_accessible    = var.publicly_accessible
+  vpc_security_group_ids = var.vpc_security_group_ids
+  db_subnet_group_name   = var.db_subnet_group_name
+  parameter_group_name   = var.parameter_group_name
+
+  # Backup
+  backup_retention_period = var.backup_retention_period
+  backup_window           = var.backup_window
+  maintenance_window      = var.maintenance_window
+  skip_final_snapshot     = var.skip_final_snapshot
+  final_snapshot_identifier = local.final_snapshot_identifier
+  copy_tags_to_snapshot   = true
+
+  # Protection
+  deletion_protection = var.deletion_protection
+
+  # Monitoring
+  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
+  monitoring_interval             = var.monitoring_interval
+  monitoring_role_arn             = local.create_monitoring_role ? aws_iam_role.rds_monitoring[0].arn : null
+
+  # Performance Insights
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
+
+  # Maintenance
+  auto_minor_version_upgrade = var.auto_minor_version_upgrade
+  apply_immediately          = var.apply_immediately
+
+  # Tags
+  tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      password,  # Ignore password changes to avoid recreation
+    ]
+  }
+}
+
+# Enhanced Monitoring IAM Role
+resource "aws_iam_role" "rds_monitoring" {
+  count = local.create_monitoring_role ? 1 : 0
+
+  name_prefix = "${var.identifier}-rds-monitoring-"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "monitoring.rds.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "rds_monitoring" {
+  count = local.create_monitoring_role ? 1 : 0
+
+  role       = aws_iam_role.rds_monitoring[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+}
+
+# CloudWatch Alarms
+resource "aws_cloudwatch_metric_alarm" "database_cpu" {
+  alarm_name          = "${var.identifier}-cpu-utilization"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors RDS CPU utilization"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.this.id
+  }
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "database_storage" {
+  alarm_name          = "${var.identifier}-free-storage-space"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "FreeStorageSpace"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "10000000000"  # 10 GB in bytes
+  alarm_description   = "This metric monitors RDS free storage space"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.this.id
+  }
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "database_memory" {
+  alarm_name          = "${var.identifier}-freeable-memory"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "FreeableMemory"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "1000000000"  # 1 GB in bytes
+  alarm_description   = "This metric monitors RDS freeable memory"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.this.id
+  }
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "database_connections" {
+  alarm_name          = "${var.identifier}-database-connections"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors RDS database connections"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.this.id
+  }
+
+  tags = var.tags
+}
+```
+
+#### Step 4: RDS Module Outputs
+
+```hcl
+# modules/rds/outputs.tf
+output "db_instance_id" {
+  description = "The RDS instance ID"
+  value       = aws_db_instance.this.id
+}
+
+output "db_instance_arn" {
+  description = "The ARN of the RDS instance"
+  value       = aws_db_instance.this.arn
+}
+
+output "db_instance_endpoint" {
+  description = "The connection endpoint"
+  value       = aws_db_instance.this.endpoint
+}
+
+output "db_instance_address" {
+  description = "The address of the RDS instance"
+  value       = aws_db_instance.this.address
+}
+
+output "db_instance_hosted_zone_id" {
+  description = "The canonical hosted zone ID of the DB instance"
+  value       = aws_db_instance.this.hosted_zone_id
+}
+
+output "db_instance_port" {
+  description = "The database port"
+  value       = aws_db_instance.this.port
+}
+
+output "db_instance_name" {
+  description = "The database name"
+  value       = aws_db_instance.this.db_name
+}
+
+output "db_instance_username" {
+  description = "The master username for the database"
+  value       = aws_db_instance.this.username
+  sensitive   = true
+}
+
+output "db_instance_resource_id" {
+  description = "The RDS Resource ID of this instance"
+  value       = aws_db_instance.this.resource_id
+}
+
+output "db_instance_status" {
+  description = "The RDS instance status"
+  value       = aws_db_instance.this.status
+}
+
+output "db_instance_availability_zone" {
+  description = "The availability zone of the instance"
+  value       = aws_db_instance.this.availability_zone
+}
+
+output "monitoring_role_arn" {
+  description = "The ARN of the monitoring role"
+  value       = local.create_monitoring_role ? aws_iam_role.rds_monitoring[0].arn : null
+}
+
+output "cloudwatch_alarm_ids" {
+  description = "CloudWatch alarm IDs"
+  value = {
+    cpu         = aws_cloudwatch_metric_alarm.database_cpu.id
+    storage     = aws_cloudwatch_metric_alarm.database_storage.id
+    memory      = aws_cloudwatch_metric_alarm.database_memory.id
+    connections = aws_cloudwatch_metric_alarm.database_connections.id
+  }
+}
+```
+
+#### Step 5: Using the RDS Module
+
+```hcl
+# main.tf
+module "rds" {
+  source = "./modules/rds"
+
+  identifier     = "${var.environment}-postgres"
+  engine         = "postgres"
+  engine_version = "15.3"
+
+  instance_class    = var.db_instance_class
+  allocated_storage = var.db_allocated_storage
+  max_allocated_storage = var.db_allocated_storage * 2
+  storage_type      = "gp3"
+  storage_encrypted = true
+  kms_key_id        = aws_kms_key.rds.arn
+
+  db_name  = "appdb"
+  username = "dbadmin"
+  password = random_password.db_password.result
+  port     = 5432
+
+  multi_az            = var.environment == "prod"
+  publicly_accessible = false
+
+  vpc_security_group_ids = [aws_security_group.database.id]
+  db_subnet_group_name   = module.vpc.database_subnet_group_name
+
+  backup_retention_period = var.environment == "prod" ? 30 : 7
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "mon:04:00-mon:05:00"
+  skip_final_snapshot     = var.environment != "prod"
+  deletion_protection     = var.environment == "prod"
+
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  monitoring_interval             = var.environment == "prod" ? 60 : 0
+
+  performance_insights_enabled          = var.environment == "prod"
+  performance_insights_retention_period = 7
+
+  auto_minor_version_upgrade = true
+  apply_immediately          = var.environment != "prod"
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-postgres"
+  })
+}
+
+# Generate secure password
+resource "random_password" "db_password" {
+  length  = 32
+  special = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+# Store password in Secrets Manager
+resource "aws_secretsmanager_secret" "db_password" {
+  name_prefix             = "${var.environment}-db-password-"
+  recovery_window_in_days = var.environment == "prod" ? 30 : 0
+
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id = aws_secretsmanager_secret.db_password.id
+  secret_string = jsonencode({
+    username = module.rds.db_instance_username
+    password = random_password.db_password.result
+    engine   = "postgres"
+    host     = module.rds.db_instance_address
+    port     = module.rds.db_instance_port
+    dbname   = module.rds.db_instance_name
+  })
+}
+
+# KMS Key for RDS encryption
+resource "aws_kms_key" "rds" {
+  description             = "KMS key for RDS encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-rds-kms"
+  })
+}
+
+resource "aws_kms_alias" "rds" {
+  name          = "alias/${var.environment}-rds"
+  target_key_id = aws_kms_key.rds.key_id
+}
+
+# Database security group
+resource "aws_security_group" "database" {
+  name_prefix = "${var.environment}-database-"
+  description = "Security group for RDS database"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+    description     = "PostgreSQL from application"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound"
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-database-sg"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Parameter group for PostgreSQL optimization
+resource "aws_db_parameter_group" "postgres" {
+  name_prefix = "${var.environment}-postgres15-"
+  family      = "postgres15"
+  description = "Custom parameter group for PostgreSQL 15"
+
+  parameter {
+    name  = "shared_preload_libraries"
+    value = "pg_stat_statements"
+  }
+
+  parameter {
+    name  = "log_statement"
+    value = "ddl"
+  }
+
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"  # Log queries taking more than 1 second
+  }
+
+  parameter {
+    name  = "log_connections"
+    value = "1"
+  }
+
+  parameter {
+    name  = "log_disconnections"
+    value = "1"
+  }
+
+  parameter {
+    name  = "max_connections"
+    value = var.environment == "prod" ? "200" : "100"
+  }
+
+  tags = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+```
+
+#### Step 6: RDS Read Replica
+
+```hcl
+# read-replica.tf
+resource "aws_db_instance" "replica" {
+  count = var.environment == "prod" ? 1 : 0
+
+  identifier     = "${var.environment}-postgres-replica"
+  replicate_source_db = module.rds.db_instance_id
+
+  instance_class = var.db_instance_class
+
+  # Storage
+  allocated_storage     = var.db_allocated_storage
+  max_allocated_storage = var.db_allocated_storage * 2
+  storage_type          = "gp3"
+  storage_encrypted     = true
+
+  # Network
+  publicly_accessible    = false
+  vpc_security_group_ids = [aws_security_group.database.id]
+
+  # Backup
+  backup_retention_period = 7
+  skip_final_snapshot     = false
+  final_snapshot_identifier = "final-${var.environment}-postgres-replica-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+
+  # Monitoring
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  monitoring_interval             = 60
+  monitoring_role_arn             = module.rds.monitoring_role_arn
+
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
+
+  auto_minor_version_upgrade = true
+  apply_immediately          = false
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-postgres-replica"
+    Role = "read-replica"
+  })
+}
+```
+
+### Verification Steps
+
+```bash
+# Validate configuration
+terraform validate
+
+# Plan
+terraform plan
+
+# Apply
+terraform apply
+
+# Get database endpoint
+terraform output db_endpoint
+
+# Test connection
+psql -h $(terraform output -raw db_address) \
+     -U dbadmin \
+     -d appdb
+
+# Verify backups are configured
+aws rds describe-db-instances \
+  --db-instance-identifier $(terraform output -raw db_instance_id) \
+  --query 'DBInstances[0].{BackupRetention:BackupRetentionPeriod,PreferredBackup:PreferredBackupWindow}' \
+  --output table
+
+# Check CloudWatch alarms
+aws cloudwatch describe-alarms \
+  --alarm-name-prefix $(terraform output -raw db_instance_id) \
+  --output table
+
+# Verify encryption
+aws rds describe-db-instances \
+  --db-instance-identifier $(terraform output -raw db_instance_id) \
+  --query 'DBInstances[0].{Encrypted:StorageEncrypted,KMSKeyId:KmsKeyId}' \
+  --output table
+
+# Check Performance Insights
+aws pi describe-dimension-keys \
+  --service-type RDS \
+  --identifier $(terraform output -raw db_instance_arn) \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --metric db.load.avg \
+  --group-by '{"Group":"db.sql"}'
+
+# Test high availability (if Multi-AZ)
+aws rds reboot-db-instance \
+  --db-instance-identifier $(terraform output -raw db_instance_id) \
+  --force-failover-db-instance
+```
+
+### Best Practices Implemented
+
+1. **Security**: Encryption at rest with KMS, private subnet deployment
+2. **High Availability**: Multi-AZ deployment for production
+3. **Backup**: Automated backups with retention policy
+4. **Monitoring**: CloudWatch alarms and Performance Insights
+5. **Secrets Management**: Passwords in Secrets Manager
+6. **Cost Optimization**: Environment-specific configurations
+7. **Parameter Tuning**: Custom parameter groups
+8. **Read Replicas**: For production read scaling
+9. **Protection**: Deletion protection for production
+10. **Lifecycle Management**: Proper final snapshots
+
+---
+
+## Task 6.8: Manage S3 Buckets and IAM Policies
+
+> **📖 [Back to Task](./REAL-WORLD-TASKS.md#task-68-manage-s3-buckets-and-iam-policies)**
+
+### Solution Overview
+
+This solution creates secure S3 buckets with proper security controls, versioning, lifecycle policies, and IAM policies for access management.
+
+### Complete Solution
+
+#### Step 1: S3 Module Structure
+
+```bash
+mkdir -p modules/s3
+cd modules/s3
+touch main.tf variables.tf outputs.tf
+```
+
+#### Step 2: S3 Module Variables
+
+```hcl
+# modules/s3/variables.tf
+variable "bucket_prefix" {
+  description = "Prefix for bucket name"
+  type        = string
+}
+
+variable "force_destroy" {
+  description = "Allow bucket to be destroyed even if it contains objects"
+  type        = bool
+  default     = false
+}
+
+variable "versioning_enabled" {
+  description = "Enable versioning"
+  type        = bool
+  default     = true
+}
+
+variable "mfa_delete" {
+  description = "Enable MFA delete"
+  type        = bool
+  default     = false
+}
+
+variable "lifecycle_rules" {
+  description = "List of lifecycle rules"
+  type = list(object({
+    id      = string
+    enabled = bool
+    prefix  = string
+
+    expiration_days = number
+    
+    transition = list(object({
+      days          = number
+      storage_class = string
+    }))
+
+    noncurrent_version_expiration_days = number
+    
+    noncurrent_version_transitions = list(object({
+      days          = number
+      storage_class = string
+    }))
+  }))
+  default = []
+}
+
+variable "enable_encryption" {
+  description = "Enable server-side encryption"
+  type        = bool
+  default     = true
+}
+
+variable "kms_key_id" {
+  description = "KMS key ID for encryption"
+  type        = string
+  default     = null
+}
+
+variable "enable_logging" {
+  description = "Enable access logging"
+  type        = bool
+  default     = true
+}
+
+variable "log_bucket" {
+  description = "Bucket for access logs"
+  type        = string
+  default     = null
+}
+
+variable "enable_cors" {
+  description = "Enable CORS configuration"
+  type        = bool
+  default     = false
+}
+
+variable "cors_rules" {
+  description = "CORS rules"
+  type = list(object({
+    allowed_headers = list(string)
+    allowed_methods = list(string)
+    allowed_origins = list(string)
+    expose_headers  = list(string)
+    max_age_seconds = number
+  }))
+  default = []
+}
+
+variable "enable_replication" {
+  description = "Enable cross-region replication"
+  type        = bool
+  default     = false
+}
+
+variable "replication_role_arn" {
+  description = "IAM role ARN for replication"
+  type        = string
+  default     = null
+}
+
+variable "replication_rules" {
+  description = "Replication rules"
+  type = list(object({
+    id       = string
+    priority = number
+    prefix   = string
+    status   = string
+    destination = object({
+      bucket        = string
+      storage_class = string
+    })
+  }))
+  default = []
+}
+
+variable "enable_inventory" {
+  description = "Enable S3 inventory"
+  type        = bool
+  default     = false
+}
+
+variable "inventory_bucket_arn" {
+  description = "Destination bucket ARN for inventory"
+  type        = string
+  default     = null
+}
+
+variable "intelligent_tiering_configurations" {
+  description = "Intelligent-Tiering configurations"
+  type = list(object({
+    name   = string
+    status = string
+    filter_prefix = string
+    tiering = list(object({
+      access_tier = string
+      days        = number
+    }))
+  }))
+  default = []
+}
+
+variable "object_lock_enabled" {
+  description = "Enable S3 Object Lock"
+  type        = bool
+  default     = false
+}
+
+variable "object_lock_configuration" {
+  description = "Object Lock configuration"
+  type = object({
+    mode  = string
+    days  = number
+    years = number
+  })
+  default = null
+}
+
+variable "tags" {
+  description = "Tags to apply to bucket"
+  type        = map(string)
+  default     = {}
+}
+```
+
+#### Step 3: S3 Module Main Configuration
+
+```hcl
+# modules/s3/main.tf
+# S3 Bucket
+resource "aws_s3_bucket" "this" {
+  bucket_prefix = var.bucket_prefix
+  force_destroy = var.force_destroy
+
+  object_lock_enabled = var.object_lock_enabled
+
+  tags = var.tags
+}
+
+# Versioning
+resource "aws_s3_bucket_versioning" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  versioning_configuration {
+    status     = var.versioning_enabled ? "Enabled" : "Suspended"
+    mfa_delete = var.mfa_delete ? "Enabled" : "Disabled"
+  }
+}
+
+# Server-Side Encryption
+resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  count = var.enable_encryption ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = var.kms_key_id != null ? "aws:kms" : "AES256"
+      kms_master_key_id = var.kms_key_id
+    }
+    bucket_key_enabled = var.kms_key_id != null ? true : null
+  }
+}
+
+# Public Access Block
+resource "aws_s3_bucket_public_access_block" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Lifecycle Rules
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  count = length(var.lifecycle_rules) > 0 ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  dynamic "rule" {
+    for_each = var.lifecycle_rules
+    content {
+      id     = rule.value.id
+      status = rule.value.enabled ? "Enabled" : "Disabled"
+
+      filter {
+        prefix = rule.value.prefix
+      }
+
+      dynamic "expiration" {
+        for_each = rule.value.expiration_days > 0 ? [1] : []
+        content {
+          days = rule.value.expiration_days
+        }
+      }
+
+      dynamic "transition" {
+        for_each = rule.value.transition
+        content {
+          days          = transition.value.days
+          storage_class = transition.value.storage_class
+        }
+      }
+
+      dynamic "noncurrent_version_expiration" {
+        for_each = rule.value.noncurrent_version_expiration_days > 0 ? [1] : []
+        content {
+          noncurrent_days = rule.value.noncurrent_version_expiration_days
+        }
+      }
+
+      dynamic "noncurrent_version_transition" {
+        for_each = rule.value.noncurrent_version_transitions
+        content {
+          noncurrent_days = noncurrent_version_transition.value.days
+          storage_class   = noncurrent_version_transition.value.storage_class
+        }
+      }
+    }
+  }
+}
+
+# Access Logging
+resource "aws_s3_bucket_logging" "this" {
+  count = var.enable_logging && var.log_bucket != null ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  target_bucket = var.log_bucket
+  target_prefix = "log/${aws_s3_bucket.this.id}/"
+}
+
+# CORS Configuration
+resource "aws_s3_bucket_cors_configuration" "this" {
+  count = var.enable_cors && length(var.cors_rules) > 0 ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  dynamic "cors_rule" {
+    for_each = var.cors_rules
+    content {
+      allowed_headers = cors_rule.value.allowed_headers
+      allowed_methods = cors_rule.value.allowed_methods
+      allowed_origins = cors_rule.value.allowed_origins
+      expose_headers  = cors_rule.value.expose_headers
+      max_age_seconds = cors_rule.value.max_age_seconds
+    }
+  }
+}
+
+# Replication Configuration
+resource "aws_s3_bucket_replication_configuration" "this" {
+  count = var.enable_replication && length(var.replication_rules) > 0 ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+  role   = var.replication_role_arn
+
+  dynamic "rule" {
+    for_each = var.replication_rules
+    content {
+      id       = rule.value.id
+      priority = rule.value.priority
+      status   = rule.value.status
+
+      filter {
+        prefix = rule.value.prefix
+      }
+
+      destination {
+        bucket        = rule.value.destination.bucket
+        storage_class = rule.value.destination.storage_class
+      }
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.this]
+}
+
+# Inventory Configuration
+resource "aws_s3_bucket_inventory" "this" {
+  count = var.enable_inventory && var.inventory_bucket_arn != null ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+  name   = "EntireBucketInventory"
+
+  included_object_versions = "All"
+
+  schedule {
+    frequency = "Daily"
+  }
+
+  destination {
+    bucket {
+      format     = "CSV"
+      bucket_arn = var.inventory_bucket_arn
+      prefix     = "inventory"
+    }
+  }
+
+  optional_fields = [
+    "Size",
+    "LastModifiedDate",
+    "StorageClass",
+    "ETag",
+    "IsMultipartUploaded",
+    "ReplicationStatus",
+    "EncryptionStatus",
+    "ObjectLockRetainUntilDate",
+    "ObjectLockMode",
+    "ObjectLockLegalHoldStatus",
+    "IntelligentTieringAccessTier"
+  ]
+}
+
+# Intelligent-Tiering Configurations
+resource "aws_s3_bucket_intelligent_tiering_configuration" "this" {
+  for_each = { for config in var.intelligent_tiering_configurations : config.name => config }
+
+  bucket = aws_s3_bucket.this.id
+  name   = each.value.name
+  status = each.value.status
+
+  filter {
+    prefix = each.value.filter_prefix
+  }
+
+  dynamic "tiering" {
+    for_each = each.value.tiering
+    content {
+      access_tier = tiering.value.access_tier
+      days        = tiering.value.days
+    }
+  }
+}
+
+# Object Lock Configuration
+resource "aws_s3_bucket_object_lock_configuration" "this" {
+  count = var.object_lock_enabled && var.object_lock_configuration != null ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    default_retention {
+      mode  = var.object_lock_configuration.mode
+      days  = var.object_lock_configuration.days
+      years = var.object_lock_configuration.years
+    }
+  }
+}
+```
+
+#### Step 4: S3 Module Outputs
+
+```hcl
+# modules/s3/outputs.tf
+output "bucket_id" {
+  description = "The name of the bucket"
+  value       = aws_s3_bucket.this.id
+}
+
+output "bucket_arn" {
+  description = "The ARN of the bucket"
+  value       = aws_s3_bucket.this.arn
+}
+
+output "bucket_domain_name" {
+  description = "The bucket domain name"
+  value       = aws_s3_bucket.this.bucket_domain_name
+}
+
+output "bucket_regional_domain_name" {
+  description = "The bucket region-specific domain name"
+  value       = aws_s3_bucket.this.bucket_regional_domain_name
+}
+
+output "bucket_region" {
+  description = "The AWS region this bucket resides in"
+  value       = aws_s3_bucket.this.region
+}
+```
+
+#### Step 5: Complete Implementation Example
+
+```hcl
+# main.tf - Complete S3 and IAM implementation
+
+# Application data bucket
+module "app_data_bucket" {
+  source = "./modules/s3"
+
+  bucket_prefix = "${var.environment}-app-data-"
+  force_destroy = var.environment != "prod"
+
+  versioning_enabled = true
+  mfa_delete         = var.environment == "prod"
+
+  enable_encryption = true
+  kms_key_id        = aws_kms_key.s3.arn
+
+  enable_logging = true
+  log_bucket     = module.log_bucket.bucket_id
+
+  lifecycle_rules = [
+    {
+      id      = "archive-old-versions"
+      enabled = true
+      prefix  = ""
+
+      expiration_days = 0
+
+      transition = [
+        {
+          days          = 90
+          storage_class = "STANDARD_IA"
+        },
+        {
+          days          = 180
+          storage_class = "GLACIER"
+        }
+      ]
+
+      noncurrent_version_expiration_days = 90
+
+      noncurrent_version_transitions = [
+        {
+          days          = 30
+          storage_class = "STANDARD_IA"
+        }
+      ]
+    },
+    {
+      id      = "delete-temp-files"
+      enabled = true
+      prefix  = "temp/"
+
+      expiration_days = 7
+
+      transition = []
+
+      noncurrent_version_expiration_days = 1
+
+      noncurrent_version_transitions = []
+    }
+  ]
+
+  intelligent_tiering_configurations = var.environment == "prod" ? [
+    {
+      name          = "entire-bucket"
+      status        = "Enabled"
+      filter_prefix = ""
+      tiering = [
+        {
+          access_tier = "ARCHIVE_ACCESS"
+          days        = 90
+        },
+        {
+          access_tier = "DEEP_ARCHIVE_ACCESS"
+          days        = 180
+        }
+      ]
+    }
+  ] : []
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-app-data"
+    Type = "application-data"
+  })
+}
+
+# Static assets bucket with CloudFront
+module "static_assets_bucket" {
+  source = "./modules/s3"
+
+  bucket_prefix = "${var.environment}-static-assets-"
+  force_destroy = var.environment != "prod"
+
+  versioning_enabled = true
+  enable_encryption  = true
+
+  enable_cors = true
+  cors_rules = [
+    {
+      allowed_headers = ["*"]
+      allowed_methods = ["GET", "HEAD"]
+      allowed_origins = ["https://${var.domain_name}"]
+      expose_headers  = ["ETag"]
+      max_age_seconds = 3600
+    }
+  ]
+
+  lifecycle_rules = [
+    {
+      id      = "cleanup-old-assets"
+      enabled = true
+      prefix  = "old/"
+
+      expiration_days = 30
+
+      transition = []
+
+      noncurrent_version_expiration_days = 7
+
+      noncurrent_version_transitions = []
+    }
+  ]
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-static-assets"
+    Type = "cdn-origin"
+  })
+}
+
+# Backup bucket with cross-region replication
+module "backup_bucket" {
+  source = "./modules/s3"
+
+  bucket_prefix = "${var.environment}-backups-"
+  force_destroy = false  # Never allow force destroy on backups
+
+  versioning_enabled = true
+  mfa_delete         = var.environment == "prod"
+
+  enable_encryption = true
+  kms_key_id        = aws_kms_key.s3.arn
+
+  enable_replication  = var.environment == "prod"
+  replication_role_arn = var.environment == "prod" ? aws_iam_role.replication[0].arn : null
+
+  replication_rules = var.environment == "prod" ? [
+    {
+      id       = "replicate-all"
+      priority = 1
+      prefix   = ""
+      status   = "Enabled"
+      destination = {
+        bucket        = module.backup_replica_bucket[0].bucket_arn
+        storage_class = "GLACIER"
+      }
+    }
+  ] : []
+
+  object_lock_enabled = var.environment == "prod"
+  object_lock_configuration = var.environment == "prod" ? {
+    mode  = "GOVERNANCE"
+    days  = 30
+    years = 0
+  } : null
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-backups"
+    Type = "backup"
+  })
+}
+
+# Backup replica bucket (different region)
+module "backup_replica_bucket" {
+  count  = var.environment == "prod" ? 1 : 0
+  source = "./modules/s3"
+
+  bucket_prefix = "${var.environment}-backups-replica-"
+  force_destroy = false
+
+  versioning_enabled = true
+  enable_encryption  = true
+  kms_key_id         = aws_kms_key.s3_replica[0].arn
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-backups-replica"
+    Type = "backup-replica"
+  })
+
+  providers = {
+    aws = aws.replica
+  }
+}
+
+# Logs bucket
+module "log_bucket" {
+  source = "./modules/s3"
+
+  bucket_prefix = "${var.environment}-logs-"
+  force_destroy = var.environment != "prod"
+
+  versioning_enabled = false
+  enable_encryption  = true
+
+  lifecycle_rules = [
+    {
+      id      = "expire-old-logs"
+      enabled = true
+      prefix  = ""
+
+      expiration_days = var.environment == "prod" ? 90 : 30
+
+      transition = [
+        {
+          days          = 30
+          storage_class = "GLACIER"
+        }
+      ]
+
+      noncurrent_version_expiration_days = 0
+      noncurrent_version_transitions     = []
+    }
+  ]
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-logs"
+    Type = "logs"
+  })
+}
+
+# KMS Keys for S3 encryption
+resource "aws_kms_key" "s3" {
+  description             = "KMS key for S3 bucket encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow S3 to use the key"
+        Effect = "Allow"
+        Principal = {
+          Service = "s3.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-s3-kms"
+  })
+}
+
+resource "aws_kms_alias" "s3" {
+  name          = "alias/${var.environment}-s3"
+  target_key_id = aws_kms_key.s3.key_id
+}
+
+resource "aws_kms_key" "s3_replica" {
+  count = var.environment == "prod" ? 1 : 0
+
+  description             = "KMS key for S3 replica bucket encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-s3-replica-kms"
+  })
+
+  provider = aws.replica
+}
+
+# IAM Policy for S3 Access
+resource "aws_iam_policy" "s3_app_access" {
+  name        = "${var.environment}-s3-app-access"
+  description = "Policy for application S3 access"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ListBuckets"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          module.app_data_bucket.bucket_arn,
+          module.static_assets_bucket.bucket_arn
+        ]
+      },
+      {
+        Sid    = "ReadWriteObjects"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [
+          "${module.app_data_bucket.bucket_arn}/*",
+          "${module.static_assets_bucket.bucket_arn}/*"
+        ]
+      },
+      {
+        Sid    = "KMSAccess"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = [
+          aws_kms_key.s3.arn
+        ]
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# IAM Role for Replication
+resource "aws_iam_role" "replication" {
+  count = var.environment == "prod" ? 1 : 0
+
+  name = "${var.environment}-s3-replication-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "s3.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "replication" {
+  count = var.environment == "prod" ? 1 : 0
+
+  name = "${var.environment}-s3-replication-policy"
+  role = aws_iam_role.replication[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:GetReplicationConfiguration",
+          "s3:ListBucket"
+        ]
+        Effect = "Allow"
+        Resource = [
+          module.backup_bucket.bucket_arn
+        ]
+      },
+      {
+        Action = [
+          "s3:GetObjectVersionForReplication",
+          "s3:GetObjectVersionAcl",
+          "s3:GetObjectVersionTagging"
+        ]
+        Effect = "Allow"
+        Resource = [
+          "${module.backup_bucket.bucket_arn}/*"
+        ]
+      },
+      {
+        Action = [
+          "s3:ReplicateObject",
+          "s3:ReplicateDelete",
+          "s3:ReplicateTags"
+        ]
+        Effect = "Allow"
+        Resource = [
+          "${module.backup_replica_bucket[0].bucket_arn}/*"
+        ]
+      },
+      {
+        Action = [
+          "kms:Decrypt"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_kms_key.s3.arn
+        ]
+        Condition = {
+          StringLike = {
+            "kms:ViaService" = "s3.${data.aws_region.current.name}.amazonaws.com"
+          }
+        }
+      },
+      {
+        Action = [
+          "kms:Encrypt"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_kms_key.s3_replica[0].arn
+        ]
+        Condition = {
+          StringLike = {
+            "kms:ViaService" = "s3.${var.replica_region}.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Bucket Policies
+resource "aws_s3_bucket_policy" "app_data" {
+  bucket = module.app_data_bucket.bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DenyInsecureTransport"
+        Effect = "Deny"
+        Principal = "*"
+        Action = "s3:*"
+        Resource = [
+          module.app_data_bucket.bucket_arn,
+          "${module.app_data_bucket.bucket_arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      },
+      {
+        Sid    = "DenyUnencryptedObjectUploads"
+        Effect = "Deny"
+        Principal = "*"
+        Action = "s3:PutObject"
+        Resource = "${module.app_data_bucket.bucket_arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "s3:x-amz-server-side-encryption" = "aws:kms"
+          }
+        }
+      }
+    ]
+  })
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+```
+
+### Verification Steps
+
+```bash
+# Verify bucket creation
+terraform output
+
+# List all buckets
+aws s3 ls
+
+# Check bucket versioning
+aws s3api get-bucket-versioning \
+  --bucket $(terraform output -raw app_data_bucket_id)
+
+# Check encryption
+aws s3api get-bucket-encryption \
+  --bucket $(terraform output -raw app_data_bucket_id)
+
+# Check lifecycle rules
+aws s3api get-bucket-lifecycle-configuration \
+  --bucket $(terraform output -raw app_data_bucket_id)
+
+# Test bucket policy (should deny HTTP)
+aws s3 cp test.txt s3://$(terraform output -raw app_data_bucket_id)/ --no-sign-request
+# Should fail with access denied
+
+# Check replication status (for prod)
+aws s3api get-bucket-replication \
+  --bucket $(terraform output -raw backup_bucket_id)
+
+# Verify object lock (for prod)
+aws s3api get-object-lock-configuration \
+  --bucket $(terraform output -raw backup_bucket_id)
+
+# Test IAM policy
+aws sts assume-role \
+  --role-arn $(terraform output -raw s3_access_role_arn) \
+  --role-session-name test-session
+
+# Upload test file
+aws s3 cp test.txt s3://$(terraform output -raw app_data_bucket_id)/
+
+# Verify encryption
+aws s3api head-object \
+  --bucket $(terraform output -raw app_data_bucket_id) \
+  --key test.txt \
+  --query ServerSideEncryption
+```
+
+### Best Practices Implemented
+
+1. **Security**: Encryption, public access block, secure transport
+2. **Versioning**: Object versioning for data protection
+3. **Lifecycle Management**: Automatic archival and deletion
+4. **Access Control**: Granular IAM policies
+5. **Logging**: Access logging for auditing
+6. **Replication**: Cross-region replication for DR
+7. **Cost Optimization**: Intelligent-Tiering, lifecycle transitions
+8. **Compliance**: Object Lock for WORM storage
+9. **KMS Integration**: Customer-managed encryption keys
+10. **CORS Configuration**: Secure cross-origin access
+
+---
