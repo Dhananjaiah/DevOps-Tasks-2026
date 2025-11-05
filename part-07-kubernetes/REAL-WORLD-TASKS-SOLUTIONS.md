@@ -2510,7 +2510,7 @@ data:
 
 ### Solution Overview
 
-This task requires implementing secrets management in kubernetes. Below is a complete, production-ready solution following Kubernetes best practices.
+This task demonstrates secure management of sensitive data in Kubernetes using Secrets, including creation, usage, rotation, and best practices for production environments.
 
 ### Prerequisites
 
@@ -2518,93 +2518,1061 @@ This task requires implementing secrets management in kubernetes. Below is a com
 # Verify kubectl is installed and configured
 kubectl version --client
 kubectl cluster-info
-kubectl get nodes
+
+# Create namespace for this task
+kubectl create namespace secrets-demo
 ```
 
 ### Step-by-Step Implementation
 
-#### Step 1: Prerequisites Setup
+#### Step 1: Create Secrets using Different Methods
+
+**Method 1: From Literal Values**
 
 ```bash
-# Ensure necessary tools and access
-kubectl version --client
-kubectl config current-context
+# Create generic secret from command line
+kubectl create secret generic db-credentials \
+  --from-literal=username=admin \
+  --from-literal=password='MySecureP@ssw0rd!' \
+  --from-literal=database=myapp \
+  -n secrets-demo
+
+# Verify (data is base64 encoded)
+kubectl get secret db-credentials -n secrets-demo -o yaml
 ```
 
-#### Step 2: Implementation
+**Method 2: From Files**
 
-[Detailed implementation steps for Task 7.5]
+```bash
+# Create secret files
+echo -n 'admin' > username.txt
+echo -n 'MySecureP@ssw0rd!' > password.txt
+
+# Create secret from files
+kubectl create secret generic db-creds-from-file \
+  --from-file=username=username.txt \
+  --from-file=password=password.txt \
+  -n secrets-demo
+
+# Clean up files
+rm username.txt password.txt
+```
+
+**Method 3: From YAML Manifest (Manual Base64 Encoding)**
 
 ```yaml
-# Example manifest for Secrets Management in Kubernetes
+# db-secret.yaml
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: example-5
-  namespace: default
+  name: database-secret
+  namespace: secrets-demo
+  labels:
+    app: myapp
+    type: database
+type: Opaque
 data:
-  key: value
+  # Values must be base64 encoded
+  # echo -n 'value' | base64
+  DB_HOST: cG9zdGdyZXMuc3ZjLmNsdXN0ZXIubG9jYWw=      # postgres.svc.cluster.local
+  DB_PORT: NTQzMg==                                    # 5432
+  DB_NAME: bXlhcHBkYg==                                # myappdb
+  DB_USER: YXBwdXNlcg==                                # appuser
+  DB_PASSWORD: U3VwZXJTZWNyZXRQYXNzd29yZDEyMyE=        # SuperSecretPassword123!
+  # Multi-line certificate
+  tls.crt: |
+    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURYVENDQWtXZ0F3SUJBZ0lV
+    ...
+stringData:
+  # stringData for non-encoded values (auto-converted to base64)
+  connection-string: "postgresql://appuser:SuperSecretPassword123!@postgres:5432/myappdb"
+  api-key: "sk-proj-1234567890abcdef"
 ```
 
-#### Step 3: Apply Configuration
+```bash
+# Base64 encode values
+echo -n 'postgres.svc.cluster.local' | base64
+echo -n '5432' | base64
+echo -n 'myappdb' | base64
+
+# Apply secret
+kubectl apply -f db-secret.yaml
+
+# Verify
+kubectl get secret database-secret -n secrets-demo
+kubectl describe secret database-secret -n secrets-demo  # Values are hidden
+```
+
+**Method 4: TLS Secrets (for certificates)**
 
 ```bash
-# Apply the configuration
-kubectl apply -f manifests/
+# Generate self-signed certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key \
+  -out tls.crt \
+  -subj "/CN=myapp.example.com/O=MyOrg"
 
-# Verify deployment
-kubectl get all -n default
+# Create TLS secret
+kubectl create secret tls tls-secret \
+  --cert=tls.crt \
+  --key=tls.key \
+  -n secrets-demo
+
+# Verify
+kubectl get secret tls-secret -n secrets-demo -o yaml
+
+# Clean up
+rm tls.key tls.crt
+```
+
+**Method 5: Docker Registry Secret**
+
+```bash
+# Create Docker registry secret for pulling images
+kubectl create secret docker-registry regcred \
+  --docker-server=https://index.docker.io/v1/ \
+  --docker-username=myusername \
+  --docker-password='MyDockerPassword!' \
+  --docker-email=myemail@example.com \
+  -n secrets-demo
+
+# Use in pod spec
+# imagePullSecrets:
+# - name: regcred
+```
+
+**Method 6: SSH Keys**
+
+```bash
+# Create SSH key secret
+ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+
+kubectl create secret generic ssh-key-secret \
+  --from-file=ssh-privatekey=./id_rsa \
+  --from-file=ssh-publickey=./id_rsa.pub \
+  -n secrets-demo
+
+rm ./id_rsa ./id_rsa.pub
+```
+
+#### Step 2: Use Secrets as Environment Variables
+
+**Deployment with Secrets as Environment Variables:**
+
+```yaml
+# app-with-secrets-env.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-secrets
+  namespace: secrets-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: secure-app
+  template:
+    metadata:
+      labels:
+        app: secure-app
+    spec:
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "=== Secret Configuration ==="
+          echo "Database Host: $DB_HOST"
+          echo "Database Port: $DB_PORT"
+          echo "Database Name: $DB_NAME"
+          echo "Database User: $DB_USER"
+          echo "DB Password Length: ${#DB_PASSWORD}"
+          echo "Connection String exists: $([ -n "$CONNECTION_STRING" ] && echo 'Yes' || echo 'No')"
+          echo "================================"
+          sleep 3600
+        
+        # Method 1: Individual secret values
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: DB_PASSWORD
+        
+        # Method 2: Load all keys from secret
+        envFrom:
+        - secretRef:
+            name: database-secret
+            optional: false  # Pod fails if secret doesn't exist
+        
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+```
+
+```bash
+kubectl apply -f app-with-secrets-env.yaml
+
+# Verify environment variables (password values are hidden in logs)
+POD=$(kubectl get pod -n secrets-demo -l app=secure-app -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n secrets-demo $POD -- env | grep DB_
+```
+
+#### Step 3: Mount Secrets as Files
+
+**Deployment with Secrets Mounted as Volumes:**
+
+```yaml
+# app-with-secrets-volume.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-secrets-volume
+  namespace: secrets-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-volume
+  template:
+    metadata:
+      labels:
+        app: app-volume
+    spec:
+      containers:
+      - name: app
+        image: nginx:alpine
+        
+        volumeMounts:
+        # Mount all secret keys as files
+        - name: db-secrets
+          mountPath: /etc/secrets/database
+          readOnly: true
+        
+        # Mount specific key as file
+        - name: api-key
+          mountPath: /etc/secrets/api-key
+          subPath: api-key
+          readOnly: true
+        
+        # Mount TLS certificates
+        - name: tls-certs
+          mountPath: /etc/nginx/ssl
+          readOnly: true
+        
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      
+      volumes:
+      # Volume from secret (all keys)
+      - name: db-secrets
+        secret:
+          secretName: database-secret
+          defaultMode: 0400  # Read-only for owner
+      
+      # Volume with specific key
+      - name: api-key
+        secret:
+          secretName: database-secret
+          items:
+          - key: api-key
+            path: api-key
+            mode: 0400
+      
+      # TLS certificate volume
+      - name: tls-certs
+        secret:
+          secretName: tls-secret
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+            mode: 0400
+```
+
+```bash
+kubectl apply -f app-with-secrets-volume.yaml
+
+# Verify mounted secrets
+POD=$(kubectl get pod -n secrets-demo -l app=app-volume -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n secrets-demo $POD -- ls -la /etc/secrets/database
+kubectl exec -n secrets-demo $POD -- cat /etc/secrets/database/DB_USER
+kubectl exec -n secrets-demo $POD -- ls -la /etc/nginx/ssl
+```
+
+#### Step 4: Implement RBAC for Secret Access
+
+**ServiceAccount and RBAC Configuration:**
+
+```yaml
+# secret-rbac.yaml
+---
+# ServiceAccount for application
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-serviceaccount
+  namespace: secrets-demo
+---
+# Role allowing read access to specific secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-reader
+  namespace: secrets-demo
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["database-secret", "tls-secret"]  # Only specific secrets
+  verbs: ["get", "list"]
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-secrets
+  namespace: secrets-demo
+subjects:
+- kind: ServiceAccount
+  name: app-serviceaccount
+  namespace: secrets-demo
+roleRef:
+  kind: Role
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Deployment using ServiceAccount
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-rbac
+  namespace: secrets-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rbac-app
+  template:
+    metadata:
+      labels:
+        app: rbac-app
+    spec:
+      serviceAccountName: app-serviceaccount  # Use specific SA
+      containers:
+      - name: app
+        image: busybox:latest
+        command: ["sleep", "3600"]
+        envFrom:
+        - secretRef:
+            name: database-secret
+```
+
+```bash
+kubectl apply -f secret-rbac.yaml
+
+# Test RBAC
+kubectl auth can-i get secret/database-secret \
+  --as=system:serviceaccount:secrets-demo:app-serviceaccount \
+  -n secrets-demo
+```
+
+#### Step 5: Secret Rotation Strategy
+
+**Implement Secret Rotation:**
+
+```bash
+# Create new version of secret
+kubectl create secret generic database-secret-v2 \
+  --from-literal=DB_HOST=postgres-v2.svc.cluster.local \
+  --from-literal=DB_PORT=5432 \
+  --from-literal=DB_NAME=myappdb \
+  --from-literal=DB_USER=appuser \
+  --from-literal=DB_PASSWORD='NewSecurePassword456!' \
+  -n secrets-demo \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Update deployment to use new secret
+kubectl set env deployment/app-with-secrets \
+  --from=secret/database-secret-v2 \
+  -n secrets-demo
+
+# Rolling restart to pick up new secret
+kubectl rollout restart deployment/app-with-secrets -n secrets-demo
+kubectl rollout status deployment/app-with-secrets -n secrets-demo
+```
+
+**Automated Rotation with External Secrets Operator:**
+
+```yaml
+# external-secret.yaml (using External Secrets Operator)
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: aws-secret
+  namespace: secrets-demo
+spec:
+  refreshInterval: 1h  # Sync every hour
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: database-credentials
+    creationPolicy: Owner
+  data:
+  - secretKey: password
+    remoteRef:
+      key: prod/database/password
+```
+
+#### Step 6: Encryption at Rest
+
+**Enable etcd Encryption:**
+
+```yaml
+# encryption-config.yaml (on control plane)
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              secret: <base64-encoded-32-byte-key>
+      - identity: {}  # Fallback to unencrypted
+
+# Apply to kube-apiserver
+# --encryption-provider-config=/path/to/encryption-config.yaml
+```
+
+```bash
+# Generate encryption key
+head -c 32 /dev/urandom | base64
+
+# After enabling encryption, re-encrypt existing secrets
+kubectl get secrets --all-namespaces -o json | kubectl replace -f -
+```
+
+#### Step 7: Immutable Secrets (Kubernetes 1.21+)
+
+```yaml
+# immutable-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: immutable-secret
+  namespace: secrets-demo
+type: Opaque
+immutable: true  # Cannot be modified
+data:
+  API_KEY: c2stcHJvai0xMjM0NTY3ODkw
+  LICENSE_KEY: bGljZW5zZS1rZXktYWJjZGVm
+```
+
+```bash
+kubectl apply -f immutable-secret.yaml
+
+# Try to update (will fail)
+kubectl patch secret immutable-secret \
+  -n secrets-demo \
+  -p '{"data":{"API_KEY":"bmV3LWtleQ=="}}'
+# Error: field is immutable
 ```
 
 ### Verification Steps
 
 ```bash
-# 1. Verify resource created
-kubectl get all -n default
+# 1. List all secrets
+kubectl get secrets -n secrets-demo
 
-# 2. Check status
-kubectl describe <resource> -n default
+# 2. Describe secret (values are hidden)
+kubectl describe secret database-secret -n secrets-demo
 
-# 3. Test functionality
-kubectl exec -it <pod> -n default -- <command>
+# 3. View secret data (base64 encoded)
+kubectl get secret database-secret -n secrets-demo -o yaml
 
-# 4. Check logs
-kubectl logs <pod> -n default
+# 4. Decode secret value
+kubectl get secret database-secret -n secrets-demo \
+  -o jsonpath='{.data.DB_PASSWORD}' | base64 --decode
+
+# 5. Verify secrets in pods
+POD=$(kubectl get pod -n secrets-demo -l app=secure-app -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n secrets-demo $POD -- env | grep DB_
+
+# 6. Check mounted secret files
+kubectl exec -n secrets-demo $POD -- ls -la /etc/secrets/
+
+# 7. Test RBAC
+kubectl auth can-i get secrets --as=system:serviceaccount:secrets-demo:app-serviceaccount -n secrets-demo
 ```
 
 ### Best Practices Implemented
 
-- ✅ Clear naming conventions
-- ✅ Proper labels and annotations
-- ✅ Resource limits configured
-- ✅ Security best practices followed
-- ✅ Documentation provided
+- ✅ **Encryption**: Enable encryption at rest for etcd
+- ✅ **RBAC**: Least privilege access to secrets
+- ✅ **Rotation**: Regular secret rotation strategy
+- ✅ **Immutability**: Use immutable secrets for stable configs
+- ✅ **External Management**: Integration with external secret stores
+- ✅ **No Git Commits**: Never commit secrets to version control
+- ✅ **File Permissions**: Proper permissions (0400) for mounted secrets
+- ✅ **Separation**: Secrets separate from ConfigMaps
+- ✅ **Scoped Access**: ServiceAccount-based access control
 
 ### Troubleshooting Guide
 
-**Common Issue 1:**
+**Issue 1: Secret not found error**
 
-**Symptoms:** [Description]
+**Symptoms:**
+```
+Error: secret "database-secret" not found
+```
 
 **Solution:**
 ```bash
-# Diagnostic commands
-kubectl get events -n default
-kubectl logs <pod> -n default
+# Verify secret exists
+kubectl get secret database-secret -n secrets-demo
 
-# Fix steps
-kubectl apply -f fix.yaml
+# Check namespace
+kubectl get secrets --all-namespaces | grep database-secret
+
+# Verify secret name in deployment
+kubectl get deployment app-with-secrets -n secrets-demo -o yaml | grep -A5 secretRef
+
+# Create secret if missing
+kubectl apply -f db-secret.yaml
+```
+
+**Issue 2: Base64 decoding errors**
+
+**Symptoms:**
+```
+illegal base64 data at input byte X
+```
+
+**Solution:**
+```bash
+# Ensure no trailing newlines
+echo -n 'value' | base64  # Correct
+echo 'value' | base64     # Wrong (includes newline)
+
+# Re-encode correctly
+VALUE="MySecret"
+BASE64_VALUE=$(echo -n "$VALUE" | base64)
+echo $BASE64_VALUE
+```
+
+**Issue 3: Pod cannot access secret**
+
+**Symptoms:**
+Pod fails to start or cannot read secret values
+
+**Solution:**
+```bash
+# Check RBAC permissions
+kubectl auth can-i get secret/database-secret \
+  --as=system:serviceaccount:secrets-demo:app-serviceaccount \
+  -n secrets-demo
+
+# Verify ServiceAccount
+kubectl get sa -n secrets-demo
+kubectl describe pod <pod-name> -n secrets-demo | grep "Service Account"
+
+# Check secret exists and pod references correct name
+kubectl get secret -n secrets-demo
+kubectl describe pod <pod-name> -n secrets-demo
+```
+
+**Issue 4: Secret values not updating in pods**
+
+**Symptoms:**
+Updated secret but pods still use old values
+
+**Solution:**
+```bash
+# For environment variables - must restart pods
+kubectl rollout restart deployment/app-with-secrets -n secrets-demo
+
+# For volume mounts - automatically updates (may take up to 60s)
+# Verify update
+kubectl exec -n secrets-demo <pod> -- cat /etc/secrets/database/DB_PASSWORD
+
+# Force immediate update by deleting pods
+kubectl delete pod -l app=secure-app -n secrets-demo
+```
+
+**Issue 5: TLS secret format incorrect**
+
+**Symptoms:**
+```
+data[tls.crt] or data[tls.key] is required
+```
+
+**Solution:**
+```bash
+# TLS secrets require specific keys
+kubectl create secret tls tls-secret \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key \
+  -n secrets-demo
+
+# Or in YAML
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tls-secret
+type: kubernetes.io/tls
+data:
+  tls.crt: <base64-encoded-cert>
+  tls.key: <base64-encoded-key>
 ```
 
 ### Interview Questions
 
-**Q1: [Question about Secrets Management in Kubernetes]**
+**Q1: What's the difference between Secrets and ConfigMaps?**
 
-**Answer:** [Detailed answer with examples]
+**Answer:**
+**Secrets:**
+- Store sensitive data (passwords, tokens, keys)
+- Base64 encoded (not encrypted by default)
+- Hidden in `kubectl describe` output
+- Can be encrypted at rest with etcd encryption
+- Size limit: 1MB
+- Mounted with restrictive permissions (0400)
+- Types: Opaque, TLS, Docker, SSH, Basic auth
 
-**Q2: When would you use this feature?**
+**ConfigMaps:**
+- Store non-sensitive configuration
+- Plain text storage
+- Visible in all outputs
+- Not encrypted
+- Size limit: 1MB
+- Mounted with default permissions (0644)
+- Used for: App configs, feature flags, URLs
 
-**Answer:** [Practical scenarios and use cases]
+**Key Security Difference:**
+```yaml
+# ConfigMap - NON-sensitive
+data:
+  API_URL: "https://api.example.com"
+  LOG_LEVEL: "info"
+
+# Secret - SENSITIVE
+data:
+  API_KEY: "c2VjcmV0LWtleS1oZXJl"  # base64
+  DB_PASSWORD: "cGFzc3dvcmQxMjM="   # base64
+```
+
+**Important**: Base64 is encoding, NOT encryption!
+
+**Q2: How do you securely manage secrets in production?**
+
+**Answer:**
+**Multi-layered Security Approach:**
+
+**1. Encryption at Rest:**
+```bash
+# Enable etcd encryption
+# kube-apiserver config:
+--encryption-provider-config=/etc/kubernetes/encryption-config.yaml
+
+# Verify encryption
+kubectl get secrets -n secrets-demo -o json | \
+  kubectl replace -f -
+```
+
+**2. External Secret Management:**
+```yaml
+# Use external secret managers
+# - AWS Secrets Manager
+# - Azure Key Vault
+# - HashiCorp Vault
+# - Google Secret Manager
+
+# With External Secrets Operator
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+  target:
+    name: database-credentials
+  data:
+  - secretKey: password
+    remoteRef:
+      key: prod/db/password
+```
+
+**3. RBAC and Access Control:**
+```yaml
+# Principle of least privilege
+# ServiceAccounts with specific permissions
+kind: Role
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["specific-secret"]
+  verbs: ["get"]
+```
+
+**4. Secret Rotation:**
+```bash
+# Regular rotation schedule
+# Automated with external secret managers
+# Version secrets: db-secret-v1, db-secret-v2
+# Blue-green deployment for rotation
+```
+
+**5. Audit Logging:**
+```bash
+# Enable audit logging for secret access
+# Monitor who accessed which secrets
+kubectl logs -n kube-system kube-apiserver-* | grep secrets
+```
+
+**6. Network Policies:**
+```yaml
+# Restrict which pods can access API server
+# Limit secret retrieval to authorized pods
+```
+
+**Best Practices:**
+- ❌ Never commit secrets to Git
+- ❌ Never hardcode secrets in images
+- ❌ Don't use secrets in environment variables (prefer volumes)
+- ✅ Use external secret managers
+- ✅ Enable encryption at rest
+- ✅ Implement secret rotation
+- ✅ Use RBAC for access control
+- ✅ Audit secret access
+- ✅ Use sealed-secrets or SOPS for Git storage
+
+**Q3: How does secret rotation work without downtime?**
+
+**Answer:**
+**Strategy for Zero-Downtime Rotation:**
+
+**Method 1: Blue-Green Deployment**
+```bash
+# Step 1: Create new secret version
+kubectl create secret generic db-secret-v2 \
+  --from-literal=password='NewPassword' \
+  -n prod
+
+# Step 2: Deploy new version with new secret
+kubectl apply -f deployment-v2.yaml  # References db-secret-v2
+
+# Step 3: Switch traffic
+kubectl patch service myapp -p '{"spec":{"selector":{"version":"v2"}}}'
+
+# Step 4: Remove old version
+kubectl delete deployment myapp-v1
+kubectl delete secret db-secret-v1
+```
+
+**Method 2: Rolling Update with Grace Period**
+```bash
+# Step 1: Update secret
+kubectl create secret generic db-secret \
+  --from-literal=password='NewPassword' \
+  -n prod \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Step 2: Annotate deployment to trigger rollout
+kubectl patch deployment myapp -p \
+  '{"spec":{"template":{"metadata":{"annotations":{"secret-version":"'$(date +%s)'"}}}}}'
+
+# Pods restart gradually with new secret
+```
+
+**Method 3: External Secrets Operator (Automatic)**
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-secret
+spec:
+  refreshInterval: 5m  # Auto-sync every 5 minutes
+  secretStoreRef:
+    name: vault
+  target:
+    name: db-credentials
+    creationPolicy: Owner
+  data:
+  - secretKey: password
+    remoteRef:
+      key: database/prod/password
+
+# Deployment watches secret and restarts on change
+```
+
+**Method 4: Dual-Secret Strategy**
+```yaml
+# Application supports both old and new credentials
+# Step 1: Add new credential
+env:
+- name: DB_PASSWORD_NEW
+  valueFrom:
+    secretKeyRef:
+      name: db-secret-v2
+      key: password
+
+# Step 2: Application tries new, falls back to old
+# Step 3: After validation, remove old secret
+# Step 4: Rename DB_PASSWORD_NEW to DB_PASSWORD
+```
+
+**Considerations:**
+- Database connections: Use connection pooling with reconnect
+- Grace periods: Allow time for connections to drain
+- Health checks: Ensure probes validate new credentials
+- Rollback plan: Keep old secret until fully validated
+
+**Q4: What are the different types of Kubernetes Secrets?**
+
+**Answer:**
+Kubernetes provides several built-in secret types:
+
+**1. Opaque (Generic) - Most Common**
+```bash
+kubectl create secret generic my-secret \
+  --from-literal=username=admin \
+  --from-literal=password=secret
+
+# Type: Opaque (default)
+# Use: Any key-value pairs
+```
+
+**2. kubernetes.io/tls - TLS Certificates**
+```bash
+kubectl create secret tls tls-secret \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key
+
+# Required keys: tls.crt, tls.key
+# Use: Ingress TLS, mTLS
+```
+
+**3. kubernetes.io/dockerconfigjson - Docker Registry**
+```bash
+kubectl create secret docker-registry regcred \
+  --docker-server=https://index.docker.io/v1/ \
+  --docker-username=user \
+  --docker-password=pass \
+  --docker-email=email@example.com
+
+# Key: .dockerconfigjson
+# Use: imagePullSecrets
+```
+
+**4. kubernetes.io/basic-auth - Basic Authentication**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth
+type: kubernetes.io/basic-auth
+stringData:
+  username: admin
+  password: secret
+
+# Keys: username, password
+# Use: HTTP Basic Auth
+```
+
+**5. kubernetes.io/ssh-auth - SSH Keys**
+```bash
+kubectl create secret generic ssh-key \
+  --from-file=ssh-privatekey=~/.ssh/id_rsa
+
+# Key: ssh-privatekey
+# Use: Git operations, SSH access
+```
+
+**6. kubernetes.io/service-account-token**
+```yaml
+# Automatically created for ServiceAccounts
+# Contains: token, ca.crt, namespace
+# Use: API server authentication
+```
+
+**7. bootstrap.kubernetes.io/token**
+```yaml
+# Bootstrap tokens for node joining
+# Use: kubeadm cluster bootstrap
+```
+
+**Usage Examples:**
+```yaml
+# Opaque
+volumes:
+- name: secret
+  secret:
+    secretName: my-secret
+
+# TLS
+spec:
+  tls:
+  - secretName: tls-secret
+    hosts:
+    - example.com
+
+# Docker Registry
+spec:
+  imagePullSecrets:
+  - name: regcred
+
+# Basic Auth
+- name: AUTH_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: basic-auth
+      key: username
+```
+
+**Q5: How do you debug issues with Secrets in Kubernetes?**
+
+**Answer:**
+**Systematic Debugging Approach:**
+
+**Step 1: Verify Secret Exists**
+```bash
+# List secrets
+kubectl get secrets -n namespace
+
+# Check specific secret
+kubectl get secret secret-name -n namespace
+
+# If not found, check all namespaces
+kubectl get secrets --all-namespaces | grep secret-name
+```
+
+**Step 2: Inspect Secret Content**
+```bash
+# Describe (values hidden)
+kubectl describe secret secret-name -n namespace
+
+# View encoded data
+kubectl get secret secret-name -n namespace -o yaml
+
+# Decode specific key
+kubectl get secret secret-name -n namespace \
+  -o jsonpath='{.data.password}' | base64 --decode
+```
+
+**Step 3: Check Pod Configuration**
+```bash
+# Verify pod references correct secret
+kubectl get pod pod-name -n namespace -o yaml | grep -A10 secret
+
+# Check events for errors
+kubectl describe pod pod-name -n namespace | grep -A20 Events
+
+# Common errors:
+# - Secret "xxx" not found
+# - Key "yyy" not found in secret
+# - Couldn't find key
+```
+
+**Step 4: Test Secret Access**
+```bash
+# Check RBAC permissions
+kubectl auth can-i get secret/secret-name \
+  --as=system:serviceaccount:namespace:sa-name \
+  -n namespace
+
+# Verify ServiceAccount
+kubectl get sa sa-name -n namespace
+kubectl describe sa sa-name -n namespace
+```
+
+**Step 5: Verify Secret in Running Pod**
+```bash
+# Check environment variables
+kubectl exec -it pod-name -n namespace -- env | grep KEY
+
+# Check mounted files
+kubectl exec -it pod-name -n namespace -- ls -la /path/to/secrets
+kubectl exec -it pod-name -n namespace -- cat /path/to/secrets/key
+
+# Verify permissions
+kubectl exec -it pod-name -n namespace -- ls -la /etc/secrets
+```
+
+**Step 6: Check Secret Updates**
+```bash
+# Verify secret was updated
+kubectl get secret secret-name -n namespace -o yaml
+
+# Check if pods picked up changes
+# Env vars - need pod restart
+kubectl rollout restart deployment/app -n namespace
+
+# Volumes - automatic (60s delay)
+# Force check
+kubectl exec pod-name -n namespace -- cat /etc/secrets/key
+```
+
+**Step 7: Validation Checklist**
+```bash
+# ✅ Secret exists in correct namespace
+# ✅ Secret has correct keys
+# ✅ Secret values are properly base64 encoded
+# ✅ Pod references correct secret name
+# ✅ Pod references correct keys
+# ✅ ServiceAccount has permissions
+# ✅ Secret mounted at correct path
+# ✅ File permissions allow reading
+# ✅ Application can parse secret format
+```
+
+**Common Issues and Fixes:**
+```bash
+# Issue: Base64 encoding problem
+echo -n 'value' | base64  # Correct (no newline)
+
+# Issue: Wrong key name
+kubectl get secret secret-name -o jsonpath='{.data}' | jq keys
+
+# Issue: Permission denied
+# Check file mode in volume mount
+defaultMode: 0400  # Owner read-only
+
+# Issue: Secret not updating
+kubectl rollout restart deployment/app  # For env vars
+kubectl delete pod pod-name  # For volumes (force)
+```
 
 ---
 
