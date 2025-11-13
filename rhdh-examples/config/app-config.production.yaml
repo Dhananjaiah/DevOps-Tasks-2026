@@ -1,0 +1,118 @@
+app:
+  title: Red Hat Developer Hub - Production
+  baseUrl: https://devhub.example.com
+
+organization:
+  name: My Organization
+
+backend:
+  baseUrl: https://devhub.example.com
+  listen:
+    port: 7007
+    host: 0.0.0.0
+  
+  cors:
+    origin: https://devhub.example.com
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true
+  
+  # Production database - PostgreSQL
+  database:
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      database: ${POSTGRES_DB}
+      ssl:
+        rejectUnauthorized: false
+
+# Production authentication
+auth:
+  environment: production
+  providers:
+    github:
+      production:
+        clientId: ${GITHUB_CLIENT_ID}
+        clientSecret: ${GITHUB_CLIENT_SECRET}
+        ## uncomment if using GitHub Enterprise
+        # enterpriseInstanceUrl: ${GITHUB_URL}
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+      ## uncomment if using GitHub Apps
+      # apps:
+      #   - appId: ${GITHUB_APP_ID}
+      #     clientId: ${GITHUB_APP_CLIENT_ID}
+      #     clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+      #     webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
+      #     privateKey: ${GITHUB_APP_PRIVATE_KEY}
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template, User, Group]
+  
+  locations:
+    # Load templates from Git
+    - type: url
+      target: https://github.com/your-org/backstage-templates/blob/main/all-templates.yaml
+      rules:
+        - allow: [Template]
+    
+    # Load organization data
+    - type: url
+      target: https://github.com/your-org/backstage-org/blob/main/org.yaml
+      rules:
+        - allow: [User, Group]
+
+scaffolder:
+  defaultAuthor:
+    name: ${SCAFFOLDER_AUTHOR_NAME}
+    email: ${SCAFFOLDER_AUTHOR_EMAIL}
+
+techdocs:
+  builder: 'external'
+  generator:
+    runIn: 'docker'
+  publisher:
+    type: 's3'
+    s3:
+      bucketName: ${TECHDOCS_S3_BUCKET}
+      region: ${AWS_REGION}
+      credentials:
+        accessKeyId: ${AWS_ACCESS_KEY_ID}
+        secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+
+# Kubernetes production configuration
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: ${K8S_CLUSTER_URL}
+          name: production-cluster
+          authProvider: 'serviceAccount'
+          serviceAccountToken: ${K8S_SERVICE_ACCOUNT_TOKEN}
+          skipTLSVerify: false
+          caData: ${K8S_CA_DATA}
+
+# Monitoring and observability
+backend:
+  # ... existing backend config ...
+  
+  # Cache configuration
+  cache:
+    store: redis
+    connection: ${REDIS_URL}
+  
+  # Reading configuration
+  reading:
+    allow:
+      - host: '*.example.com'
+      - host: 'github.com'

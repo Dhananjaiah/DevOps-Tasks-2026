@@ -4,6 +4,20 @@
 
 This repository contains a **comprehensive, practical, and exhaustive** set of DevOps tasks with full solutions designed for job aspirants preparing for real-world DevOps/SRE roles and technical interviews.
 
+## 🆕 NEW: Red Hat Developer Hub (RHDH) Setup Guide
+
+Learn how to set up Red Hat Developer Hub locally with Podman and create custom scaffolder actions!
+
+- 📖 **[Complete RHDH Setup Guide](./RHDH-SETUP-GUIDE.md)** - Comprehensive guide with custom scaffolder actions
+- 🚀 **[Quick Start Guide](./RHDH-QUICK-START.md)** - Get running in 15 minutes
+- 💡 **[Examples Directory](./rhdh-examples/)** - Ready-to-use templates and actions
+
+**Features Covered:**
+- Local RHDH installation with Podman
+- Custom scaffolder action development (trigger templates from templates)
+- Complete working examples (Template 1 → Template 2)
+- Troubleshooting and best practices
+
 ## 🚀 NEW: Real-World Sprint-Ready Tasks for ALL Tools!
 
 We now offer **practical, time-bound tasks** you can execute immediately across ALL DevOps tools:

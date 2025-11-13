@@ -1,0 +1,87 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: template2
+  title: Database Setup Template
+  description: Sets up database infrastructure for an application
+  tags:
+    - database
+    - infrastructure
+spec:
+  owner: group:infrastructure
+  type: infrastructure
+  
+  parameters:
+    - title: Database Configuration
+      required:
+        - applicationName
+        - databaseType
+      properties:
+        applicationName:
+          title: Application Name
+          type: string
+          description: Name of the application this database supports
+        databaseType:
+          title: Database Type
+          type: string
+          description: Type of database to provision
+          enum:
+            - postgresql
+            - mysql
+            - mongodb
+          default: postgresql
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the database resource
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+  
+  steps:
+    - id: log-start
+      name: Log Database Setup Start
+      action: debug:log
+      input:
+        message: 'Setting up ${{ parameters.databaseType }} database for: ${{ parameters.applicationName }}'
+    
+    - id: fetch-base
+      name: Fetch Database Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          applicationName: ${{ parameters.applicationName }}
+          databaseType: ${{ parameters.databaseType }}
+          owner: ${{ parameters.owner }}
+    
+    - id: create-db-repo
+      name: Create Database Configuration Repository
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: 'Database configuration for ${{ parameters.applicationName }}'
+        repoUrl: github.com?owner=your-org&repo=${{ parameters.applicationName }}-db
+        repoVisibility: private
+    
+    - id: register-resource
+      name: Register Database Resource
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['create-db-repo'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+    
+    - id: log-complete
+      name: Log Completion
+      action: debug:log
+      input:
+        message: 'Database setup completed for: ${{ parameters.applicationName }}'
+  
+  output:
+    links:
+      - title: Database Repository
+        url: ${{ steps['create-db-repo'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register-resource'].output.entityRef }}
