@@ -8,8 +8,10 @@ This repository contains a **comprehensive, practical, and exhaustive** set of D
 
 Learn how to set up Red Hat Developer Hub locally with Podman and create custom scaffolder actions!
 
+- 📑 **[Documentation Index](./RHDH-INDEX.md)** - Complete navigation guide for all RHDH docs
 - 📖 **[Complete RHDH Setup Guide](./RHDH-SETUP-GUIDE.md)** - Comprehensive guide with custom scaffolder actions
 - 🚀 **[Quick Start Guide](./RHDH-QUICK-START.md)** - Get running in 15 minutes
+- 📊 **[Workflow Diagram](./RHDH-WORKFLOW-DIAGRAM.md)** - Visual explanation of template triggering
 - 💡 **[Examples Directory](./rhdh-examples/)** - Ready-to-use templates and actions
 
 **Features Covered:**
@@ -17,6 +19,7 @@ Learn how to set up Red Hat Developer Hub locally with Podman and create custom 
 - Custom scaffolder action development (trigger templates from templates)
 - Complete working examples (Template 1 → Template 2)
 - Troubleshooting and best practices
+- Production deployment patterns
 
 ## 🚀 NEW: Real-World Sprint-Ready Tasks for ALL Tools!
 
