@@ -1,0 +1,96 @@
+app:
+  title: Red Hat Developer Hub
+  baseUrl: http://localhost:3000
+
+organization:
+  name: My Organization
+
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+    host: 0.0.0.0
+  
+  # CORS configuration
+  cors:
+    origin: http://localhost:3000
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true
+  
+  # Database configuration (SQLite for local development)
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+    # For persistent storage:
+    # connection:
+    #   filename: /data/backstage.db
+
+# Basic authentication (for local development)
+auth:
+  environment: development
+  providers:
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+
+# GitHub integration (optional)
+integrations:
+  github:
+    - host: github.com
+      # Uncomment and set your token
+      # token: ${GITHUB_TOKEN}
+
+# Catalog configuration
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template]
+  
+  locations:
+    # Local templates directory
+    - type: file
+      target: /templates/template1/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: /templates/template2/template.yaml
+      rules:
+        - allow: [Template]
+    
+    # Example: Load from GitHub
+    # - type: url
+    #   target: https://github.com/your-org/backstage-templates/blob/main/all-templates.yaml
+    #   rules:
+    #     - allow: [Template]
+
+# Scaffolder configuration
+scaffolder:
+  defaultAuthor:
+    name: Developer Hub
+    email: devhub@example.com
+  defaultCommitMessage: 'Initial commit from Developer Hub'
+
+# TechDocs configuration (optional)
+techdocs:
+  builder: 'local'
+  generator:
+    runIn: 'local'
+  publisher:
+    type: 'local'
+
+# Proxy configuration (optional)
+# proxy:
+#   '/custom-api':
+#     target: 'https://api.example.com'
+#     changeOrigin: true
+
+# Kubernetes configuration (optional)
+# kubernetes:
+#   serviceLocatorMethod:
+#     type: 'multiTenant'
+#   clusterLocatorMethods:
+#     - type: 'config'
+#       clusters:
+#         - url: https://kubernetes.default.svc
+#           name: local-cluster
+#           authProvider: 'serviceAccount'

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  database:
+    image: {%- if values.databaseType == 'postgresql' %}postgres:15{% elif values.databaseType == 'mysql' %}mysql:8.0{% else %}mongo:6.0{% endif %}
+    container_name: ${{ values.applicationName }}-db
+    environment:
+      {%- if values.databaseType == 'postgresql' %}
+      POSTGRES_DB: ${{ values.applicationName }}
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      {%- elif values.databaseType == 'mysql' %}
+      MYSQL_DATABASE: ${{ values.applicationName }}
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      {%- else %}
+      MONGO_INITDB_ROOT_USERNAME: dbuser
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${{ values.applicationName }}
+      {%- endif %}
+    ports:
+      - "{%- if values.databaseType == 'postgresql' %}5432:5432{% elif values.databaseType == 'mysql' %}3306:3306{% else %}27017:27017{% endif %}"
+    volumes:
+      - db-data:/var/lib/{%- if values.databaseType == 'mongodb' %}mongodb{% else %}{{ values.databaseType }}{% endif %}/data
+    networks:
+      - app-network
+    healthcheck:
+      {%- if values.databaseType == 'postgresql' %}
+      test: ["CMD-SHELL", "pg_isready -U dbuser -d ${{ values.applicationName }}"]
+      {%- elif values.databaseType == 'mysql' %}
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "dbuser", "-p${DB_PASSWORD}"]
+      {%- else %}
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      {%- endif %}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
